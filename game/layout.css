@@ -1,0 +1,85 @@
+/* 一頁顯示：先分配文字與操作高度，再以剩餘寬高等比例放置圖片。 */
+html, body { width: 100%; height: 100%; min-height: 0; }
+body { height: 100dvh; display: grid; place-items: center; }
+.game-shell { width: min(1440px, 100%); height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto auto; gap: clamp(6px, 1.2dvh, 12px); padding: clamp(10px, 2dvh, 20px) clamp(12px, 2vw, 32px); }
+.masthead { margin: 0; gap: 12px; }
+.masthead p { margin-top: 6px; }
+.scene-area { min-width: 0; min-height: 0; display: grid; place-items: center; container-type: size; }
+.scene { width: min(100cqw, calc(100cqh * 1376 / 737)); height: auto; max-width: 100%; }
+.bottom-bar { padding: 0; gap: 20px; }
+.inventory-section h2 { margin-bottom: 6px; }
+#inventory { gap: 8px; }
+.inventory-item { padding: 4px 10px; font-size: 13px; }
+#message { padding-left: 16px; line-height: 1.5; font-size: 14px; }
+footer { padding-top: 8px; font-size: 11px; line-height: 1.4; }
+
+dialog { max-width: calc(100vw - 24px); max-height: calc(100dvh - 24px); padding: 20px; }
+#investigation[open] { display: grid; width: min(1020px, calc(100vw - 24px)); height: calc(100dvh - 24px); grid-template-rows: auto minmax(0, 1fr) auto; gap: 12px; }
+.panel-heading { margin: 0; }
+.panel-heading h2 { font-size: clamp(20px, 2.3vw, 24px); }
+#panel-content { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
+#panel-message { min-height: 0; margin: 0; font-size: 14px; line-height: 1.5; }
+#panel-content > p, #panel-content > .caption, #panel-content > .actions, #panel-content > .text-clues { margin: 0; flex-shrink: 0; }
+#panel-content .actions { gap: 8px; margin: 0; }
+#panel-content .actions button { min-height: 44px; padding: 8px 12px; font-size: 15px; }
+.art-slot { flex: 1 1 0; min-width: 0; min-height: 0; display: grid; place-items: center; container-type: size; }
+.art-slot > .art { width: min(100cqw, calc(100cqh * 1376 / 737)); height: auto; max-width: 100%; aspect-ratio: 1376 / 737; container-type: inline-size; }
+#code-form { flex: 1 1 0; min-height: 0; min-width: 0; display: flex; flex-direction: column; }
+.code-mask { display: none; }
+.caption { font-size: 14px; line-height: 1.5; }
+.book-pages .writing { font-size: clamp(16px, 2.4cqw, 24px); line-height: 1.6; }
+.writing h3 { margin-bottom: clamp(8px, 1.5cqw, 16px); }
+.writing p { margin-bottom: clamp(6px, 1cqw, 10px); }
+.chart-grid figcaption { font-size: clamp(14px, 1.3vw, 16px); }
+.symbol-choice span { font-size: clamp(28px, 6cqw, 64px); }
+.symbol-choice small { font-size: clamp(11px, 1.4cqw, 14px); margin-top: 4px; }
+.direction-control span { font-size: clamp(18px, 5cqw, 48px); }
+.direction-control b { font-size: clamp(12px, 2cqw, 22px); }
+.door-slot { font-size: clamp(10px, 1.8cqw, 18px); }
+.text-clues { font-size: 14px; }
+.text-clues summary { padding: 8px 0; }
+.text-clues p { margin: 6px 0; }
+.intro { width: min(1000px, calc(100vw - 24px)); padding: 0; }
+.letter { padding: 180px 15% 28px; }
+.letter h2 { margin-bottom: 14px; }
+.letter p { font-size: clamp(16px, 1.6vw, 18px); line-height: 1.65; margin-bottom: 12px; }
+.letter button { margin-top: 16px; }
+
+@media (max-width: 640px) {
+  .game-shell { padding: 12px; gap: 8px; }
+  .bottom-bar { gap: 8px; }
+  #message { padding-left: 12px; font-size: 13px; }
+  .mobile-objects:not([hidden]) { margin: 0; gap: 6px; }
+  .inventory-item { font-size: 12px; padding: 4px 8px; gap: 6px; }
+  .inventory-item img { width: 32px; height: 32px; }
+  dialog { padding: 12px; max-width: calc(100vw - 16px); max-height: calc(100dvh - 16px); }
+  #investigation[open] { width: calc(100vw - 16px); height: calc(100dvh - 16px); gap: 8px; }
+  .panel-heading { gap: 8px; }
+  .panel-heading h2 { font-size: 20px; }
+  .panel-heading button { padding: 6px 10px; font-size: 14px; }
+  #panel-content { gap: 8px; }
+  #panel-content .actions { gap: 6px; }
+  #panel-content .actions button { padding: 8px 10px; font-size: 14px; }
+  #panel-message, .caption { font-size: 13px; line-height: 1.4; }
+  .letter { padding: 180px 16% 24px; }
+  .letter h2 { font-size: 20px; margin-bottom: 12px; }
+  .letter p { font-size: 16px; margin-bottom: 8px; }
+  .art-slot > .book-pages { width: 100cqw; height: auto; aspect-ratio: auto; }
+  .book-pages .writing { position: static; width: auto; font-size: 16px; padding: 14px 18px; line-height: 1.5; }
+  .writing.hint { padding-top: 0; }
+  .writing h3 { font-size: 16px; margin: 0 0 8px; }
+  .writing p { margin-bottom: 6px; }
+  .art-slot > .chart-art { width: 100cqw; height: 100cqh; aspect-ratio: auto; }
+  .chart-grid { position: static; width: 100%; height: 100%; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .chart-grid figure { min-height: 0; min-width: 0; padding: 3px; }
+  .chart-grid canvas { flex: 1 1 0; min-height: 0; height: 0; width: 100%; }
+  .chart-grid figcaption { flex: none; min-height: 24px; font-size: 14px; gap: 3px; }
+  .chart-grid b { font-size: 20px; }
+  .art-slot:has(.lockbox-art) { padding-bottom: 136px; }
+  .lockbox-art { margin-bottom: 0; }
+  .code-mask { display: block; position: absolute; left: 36%; top: 39%; width: 27%; height: 26%; background: #201b13; }
+  .art-slot > .painting-art.lens-active { width: 100cqw; height: auto; aspect-ratio: auto; }
+  .tracing { height: 96px; }
+  .tracing canvas { height: 70px; }
+  .text-clues { font-size: 13px; }
+}

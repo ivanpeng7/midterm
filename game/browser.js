@@ -445,6 +445,18 @@ let round = 0;
 const say = result => { $('#message').textContent = result.message; $('#panel-message').textContent = result.message; };
 const image = (key, alt) => `<div class="art"><img src="${src(key)}" alt="${alt}"></div>`;
 
+// 每張調查圖片使用剩餘的顯示空間，按鈕與文字先保留原本所需高度。
+function prepareArtwork() {
+  for (const art of $('#panel-content').querySelectorAll('.art')) {
+    if (art.parentElement.classList.contains('art-slot')) continue;
+    const slot = document.createElement('div');
+    slot.className = 'art-slot';
+    art.before(slot);
+    slot.append(art);
+  }
+}
+new MutationObserver(prepareArtwork).observe($('#panel-content'), { childList: true, subtree: true });
+
 function render() {
   const state = game.state;
   const roomSrc = src(state.flags.escaped ? 'ending' : 'study');
@@ -486,7 +498,7 @@ function drawPanel(id, reveal = false) {
     if (game.state.flags.box_open) {
       content.innerHTML = `${image('lens', '箱內的黃銅魔法透鏡')}<div class="actions">${actionButton('take-lens', game.state.flags.lens_taken ? '透鏡已取走' : '取得魔法透鏡')}</div>`;
       if (game.state.flags.lens_taken) content.innerHTML = '<div class="empty-box">密碼箱已開啟，透鏡已取走。</div>';
-    } else content.innerHTML = `<form id="code-form"><div class="art lockbox-art"><img src="${src('lockbox')}" alt="哥德式密碼箱"><div class="code-entry"><input id="code" name="code" class="code-input" type="text" inputmode="numeric" maxlength="8" autocomplete="off" aria-label="四位密碼" placeholder=" "><div class="code-placeholder" aria-hidden="true"><span></span><span></span><span></span><span></span></div></div><button class="box-unlock" type="submit">開鎖</button></div></form>`;
+    } else content.innerHTML = `<form id="code-form"><div class="art lockbox-art"><img src="${src('lockbox')}" alt="哥德式密碼箱"><div class="code-mask" aria-hidden="true"></div><div class="code-entry"><input id="code" name="code" class="code-input" type="text" inputmode="numeric" maxlength="8" autocomplete="off" aria-label="四位密碼" placeholder=" "><div class="code-placeholder" aria-hidden="true"><span></span><span></span><span></span><span></span></div></div><button class="box-unlock" type="submit">開鎖</button></div></form>`;
   } else if (id === 'painting') {
     if (game.state.flags.painting_open) { drawCompartment(reveal); return; }
     const enabled = game.state.flags.lens_active;
