@@ -15,11 +15,11 @@ h1 { font-size: clamp(22px, 2.4vw, 32px); letter-spacing: .1em; margin: 0; color
 .masthead p { margin: 8px 0 0; color: var(--muted); font-size: 14px; letter-spacing: .1em; }
 .scene { position: relative; aspect-ratio: 1376 / 737; border: 1px solid #8c7549; background: #10231b; box-shadow: 0 16px 60px #0007; overflow: hidden; }
 #room-image { width: 100%; height: 100%; display: block; }
-.hotspot { position: absolute; background: transparent; border: 1px solid #e5ce9359; border-radius: 3px; padding: 0; min-height: 0; color: white; }
-.hotspot:hover, .hotspot:focus-visible { background: #e5ce931a; border-color: #f6d48a; }
-.hotspot.chart { background: #182d22e8; border: 3px double #ae8a48; display: grid; place-content: center; }
+.hotspot { position: absolute; background: transparent; border: 0; border-radius: 3px; padding: 0; min-height: 0; color: white; box-shadow: none; }
+.hotspot:hover, .hotspot:focus-visible { background: #e5ce931a; box-shadow: none; }
+.hotspot.chart { background: #182d22e8; display: grid; place-content: center; }
 .hotspot.chart::before { content: '✧　✦\A　✧\A✦　✧'; white-space: pre; color: var(--gold); font-size: clamp(12px, 2vw, 24px); }
-.hotspot.stars { background: #17221a; border-color: #ad8d4c; }
+.hotspot.stars { background: #17221a; }
 .hotspot.stars::before { content: '✧　✧　✧'; color: var(--gold); font-size: clamp(9px, 1vw, 13px); }
 .bottom-bar { display: grid; grid-template-columns: minmax(260px, 1fr) 1fr; gap: 32px; padding: 22px 0 16px; }
 .mobile-objects { display: none; }
