@@ -1,5 +1,6 @@
 import { castleContent, assets, letter, poem, directionHint } from './castle-content.js';
 import { createGame } from './engine.js';
+import { constellations, drawGraph } from './constellations.js';
 
 const $ = selector => document.querySelector(selector);
 const src = key => `../${assets[key]}`;
@@ -48,10 +49,16 @@ function drawPanel(id) {
       content.innerHTML = `${image('lens', '箱內的黃銅魔法透鏡')}<div class="actions">${actionButton('take-lens', game.state.flags.lens_taken ? '透鏡已取走' : '取得魔法透鏡')}</div>`;
       if (game.state.flags.lens_taken) content.innerHTML = '<div class="empty-box">密碼箱已開啟，透鏡已取走。</div>';
     } else content.innerHTML = `<form id="code-form"><div class="art lockbox-art"><img src="${src('lockbox')}" alt="哥德式密碼箱"><div class="code-mask"></div><label class="code-label" for="code">四位密碼</label><input id="code" name="code" class="code-input" type="text" inputmode="numeric" maxlength="8" autocomplete="off" aria-label="四位密碼" placeholder="○ ○ ○ ○"><button class="box-unlock" type="submit">開鎖</button></div></form>`;
+  } else if (id === 'painting') {
+    const enabled = game.state.flags.lens_active;
+    content.innerHTML = `<div class="art painting-art ${enabled ? 'lens-active' : ''}"><img src="${src(enabled ? 'paintingLens' : 'painting')}" alt="《深夜觀星者》${enabled ? '透鏡視角' : '一般視角'}">${game.paintingClues.map((clue,i) => `<figure class="tracing tracing-${i}"><figcaption>${clue.region}</figcaption><canvas width="260" height="160" data-symbol="${clue.symbol}" role="img" aria-label="${clue.region}的星象連線"></canvas></figure>`).join('')}</div><div class="actions">${actionButton('toggle-lens', enabled ? '切回一般視角' : '使用魔法透鏡')}${actionButton('show-chart', '查看星象對照圖', 'quiet')}${actionButton('show-stars', '操作星座機關', 'quiet')}</div>${enabled ? '<details class="text-clues"><summary>以文字查看透鏡線索</summary><p>夜空：獅子座 ♌；長袍：巨蟹座 ♋；手稿：天蠍座 ♏。</p></details>' : '<p class="caption">一般視角 · 仔細觀察油畫，或使用道具調查。</p>'}`;
+  } else if (id === 'chart') {
+    content.innerHTML = `<div class="art chart-art"><img src="${src('chart')}" alt="十二宮格星象對照圖外框"><div class="chart-grid">${constellations.map(c => `<figure><canvas width="260" height="150" data-symbol="${c.symbol}" role="img" aria-label="${c.name}連線圖"></canvas><figcaption>${c.name} <b>${c.symbol}</b></figcaption></figure>`).join('')}</div></div><p class="caption">將油畫中的連線，與對照圖內的形狀相比。</p><div class="actions">${actionButton('show-painting', '返回油畫', 'quiet')}${actionButton('show-stars', '操作星座機關')}</div>`;
   } else {
     const key = { painting: 'painting', chart: 'chart', stars: 'stars', door: 'door' }[id];
     content.innerHTML = image(key, castleContent.views[0].hotspots.find(s => s.id === id).label);
   }
+  for (const canvas of content.querySelectorAll('canvas[data-symbol]')) drawGraph(canvas, constellations.find(c => c.symbol === canvas.dataset.symbol).graph);
 }
 
 $('#panel-content').addEventListener('click', event => {
@@ -63,6 +70,10 @@ $('#panel-content').addEventListener('click', event => {
   if (action === 'book-cover') drawPanel('book');
   if (action === 'open-box') openPanel('box');
   if (action === 'take-lens') { say(game.act('take_lens')); render(); drawPanel('box'); }
+  if (action === 'toggle-lens') { say(game.toggleLens()); drawPanel('painting'); }
+  if (action === 'show-chart') openPanel('chart');
+  if (action === 'show-painting') openPanel('painting');
+  if (action === 'show-stars') openPanel('stars');
 });
 $('#panel-content').addEventListener('submit', event => {
   if (event.target.id !== 'code-form') return;

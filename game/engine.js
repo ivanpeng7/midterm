@@ -1,5 +1,6 @@
 import { castleContent } from './castle-content.js';
 import { loadGameContent } from './validate-content.js';
+import { constellations } from './constellations.js';
 
 // 只對副本套用；任一效果不合法便整組失敗，原狀態保持完整。
 export function applyEffects(state, effects, content) {
@@ -32,6 +33,15 @@ export function createGame(content = castleContent) {
   return {
     get state() { return structuredClone(state); },
     get panel() { return panel; },
+    get paintingClues() {
+      if (!state.inventory.includes('lens') || !state.flags.lens_active) return [];
+      return [['夜空','♌'],['長袍','♋'],['手稿','♏']].map(([region,symbol]) => ({ region, symbol, graph: structuredClone(constellations.find(c => c.symbol === symbol).graph) }));
+    },
+    toggleLens() {
+      if (!state.flags.started || state.flags.escaped || !state.inventory.includes('lens')) return reply(false, '需要先取得魔法透鏡。');
+      state.flags.lens_active = !state.flags.lens_active;
+      return reply(true, state.flags.lens_active ? '已啟用透鏡視角。仔細比對三處連線與星象對照圖。' : '已切回一般視角。');
+    },
     describe(id) { return content.items.find(item => item.id === id && state.inventory.includes(id))?.description ?? '目前沒有這個道具。'; },
     start() { state.flags.started = true; return reply(true, '仔細調查書房，尋找解除結界的方法。'); },
     open(id) {

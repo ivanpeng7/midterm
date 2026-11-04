@@ -59,5 +59,5 @@ export const castleContent = {
     { id: 'solve_box', kind: 'enterCode', puzzleId: 'box_code', feedback: { success: '密碼箱打開了。箱內有一片黃銅透鏡。', failure: '密碼不對，請輸入四位半形數字。可以重新嘗試。', repeated: '密碼箱已經打開。' } },
     { id: 'take_lens', kind: 'take', itemId: 'lens', onceFlag: 'lens_taken', requiresFlags: ['box_open'], feedback: { success: '你取得了魔法透鏡，可在道具欄查看。', failure: '先解開密碼箱，才能取得透鏡。', repeated: '透鏡已經取走了。' } }
   ],
-  initialState: { viewId: 'study', inventory: [], flags: { started: false, escaped: false, box_open: false, lens_taken: false } }
+  initialState: { viewId: 'study', inventory: [], flags: { started: false, escaped: false, box_open: false, lens_taken: false, lens_active: false } }
 };

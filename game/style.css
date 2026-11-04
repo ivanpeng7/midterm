@@ -49,6 +49,20 @@ dialog::backdrop { background: #020d0bdb; backdrop-filter: blur(4px); }
 .code-input { position: absolute; left: 37%; top: 42%; width: 25%; height: 20%; background: #201b13; color: #ffe0a3; border: 1px solid #c6a86b; text-align: center; font-size: clamp(20px, 4vw, 48px); letter-spacing: .1em; padding: 0; }
 .box-unlock { position: absolute; left: 42%; top: 73%; width: 16%; height: 9%; padding: 0; min-height: 0; font-size: clamp(12px, 1.7vw, 20px); }
 .empty-box { min-height: 200px; display: grid; place-content: center; border: 1px solid var(--line); }
+.caption { color: var(--muted); text-align: center; line-height: 1.7; }
+.tracing { position: absolute; background: #102b2bf5; border: 1px solid #73bdb9; margin: 0; border-radius: 8px; box-shadow: 0 0 22px #113e39; padding: 4px; }
+.tracing figcaption { text-align: center; font-size: clamp(9px, 1.1vw, 13px); color: #d7faff; }
+.tracing canvas { display: block; width: 100%; height: calc(100% - 20px); }
+.tracing-0 { left: 49%; top: 3%; width: 19%; height: 22%; }
+.tracing-1 { left: 34%; top: 50%; width: 15%; height: 23%; }
+.tracing-2 { left: 54%; top: 61%; width: 17%; height: 29%; }
+.chart-grid { position: absolute; left: 7.8%; top: 10%; width: 84.4%; height: 87%; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(3, 1fr); gap: 7px; background: #121e19; }
+.chart-grid figure { margin: 0; min-width: 0; min-height: 0; background: #1c302b; border: 1px solid #ad9159; padding: 4px; display: flex; flex-direction: column; }
+.chart-grid canvas { display: block; width: 100%; height: 75%; min-height: 0; object-fit: contain; }
+.chart-grid figcaption { font-size: clamp(9px, 1.3vw, 16px); text-align: center; color: #ffe3a0; display: flex; align-items: center; justify-content: center; gap: 10px; flex: 1; }
+.chart-grid b { font-family: 'Segoe UI Symbol', sans-serif; font-size: clamp(13px, 2.4vw, 28px); }
+.text-clues { margin-top: 16px; color: var(--muted); font-size: 14px; }
+.text-clues summary { cursor: pointer; padding: 10px 0; }
 .intro { max-width: 1000px; padding: 0; border: none; background: #d4b37b; }
 .letter { padding: 155px 15% 60px; color: #342414; background: center / 100% 100% no-repeat; text-align: left; }
 .letter h2 { margin: 0 0 20px; text-align: center; letter-spacing: .16em; }
