@@ -1,4 +1,4 @@
-import { castleContent, assets, letter } from './castle-content.js';
+import { castleContent, assets, letter, poem, directionHint } from './castle-content.js';
 import { createGame } from './engine.js';
 
 const $ = selector => document.querySelector(selector);
@@ -13,19 +13,64 @@ function render() {
   $('#room-image').src = src(state.flags.escaped ? 'ending' : 'study');
   $('#ending').hidden = !state.flags.escaped;
   $('#hotspots').hidden = state.flags.escaped;
+  $('#inventory').replaceChildren();
+  if (!state.inventory.length) $('#inventory').innerHTML = '<p>尚未取得道具</p>';
+  for (const id of state.inventory) {
+    const item = castleContent.items.find(item => item.id === id);
+    const button = document.createElement('button');
+    button.className = 'inventory-item quiet';
+    button.innerHTML = `<img src="${src(id)}" alt=""><span>查看${item.name}</span>`;
+    button.addEventListener('click', () => { say({ message: game.describe(id) }); $('#panel-title').textContent = item.name; $('#panel-content').innerHTML = `${image(id, item.name)}<p>${game.describe(id)}</p>`; lastFocus = button; $('#investigation').showModal(); });
+    $('#inventory').append(button);
+  }
 }
 
 function openPanel(id) {
   const result = game.open(id);
   say(result);
   if (!result.ok) return;
-  lastFocus = document.activeElement;
-  const spot = castleContent.views[0].hotspots.find(spot => spot.id === id);
+  if (!$('#investigation').open) lastFocus = document.activeElement;
+  const spot = castleContent.views.flatMap(view => view.hotspots).find(spot => spot.id === id);
   $('#panel-title').textContent = spot.label;
-  const key = { book: 'bookCover', trash: 'trash', painting: 'painting', chart: 'chart', stars: 'stars', door: 'door' }[id];
-  $('#panel-content').innerHTML = image(key, spot.label);
-  $('#investigation').showModal();
+  drawPanel(id);
+  if (!$('#investigation').open) $('#investigation').showModal();
 }
+
+const actionButton = (id, text, className = '') => `<button data-action="${id}" class="${className}">${text}</button>`;
+function drawPanel(id) {
+  const content = $('#panel-content');
+  if (id === 'book') {
+    content.innerHTML = `${image('bookCover', '魔法書封面，右下角以金色燙金顯示 1976，沒有日月圖騰')}<div class="actions">${actionButton('read-book', '翻開魔法書')}</div>`;
+  } else if (id === 'trash') {
+    content.innerHTML = `${image('trash', '黃銅垃圾桶內的哥德式密碼箱')}<div class="actions">${actionButton('open-box', '調查桶內密碼箱')}</div>`;
+  } else if (id === 'box') {
+    if (game.state.flags.box_open) {
+      content.innerHTML = `${image('lens', '箱內的黃銅魔法透鏡')}<div class="actions">${actionButton('take-lens', game.state.flags.lens_taken ? '透鏡已取走' : '取得魔法透鏡')}</div>`;
+      if (game.state.flags.lens_taken) content.innerHTML = '<div class="empty-box">密碼箱已開啟，透鏡已取走。</div>';
+    } else content.innerHTML = `<form id="code-form"><div class="art lockbox-art"><img src="${src('lockbox')}" alt="哥德式密碼箱"><div class="code-mask"></div><label class="code-label" for="code">四位密碼</label><input id="code" name="code" class="code-input" type="text" inputmode="numeric" maxlength="8" autocomplete="off" aria-label="四位密碼" placeholder="○ ○ ○ ○"><button class="box-unlock" type="submit">開鎖</button></div></form>`;
+  } else {
+    const key = { painting: 'painting', chart: 'chart', stars: 'stars', door: 'door' }[id];
+    content.innerHTML = image(key, castleContent.views[0].hotspots.find(s => s.id === id).label);
+  }
+}
+
+$('#panel-content').addEventListener('click', event => {
+  const action = event.target.closest('[data-action]')?.dataset.action;
+  if (action === 'read-book') {
+    $('#panel-content').innerHTML = `<div class="art book-pages"><img src="${src('bookOpen')}" alt="魔法書展開的羊皮紙內頁"><div class="writing poem"><h3>魔法師的筆記</h3>${poem.map(line => `<p><strong>${line[0]}</strong>${line.slice(1)}</p>`).join('')}</div><div class="writing hint"><h3>留給學徒</h3><p>${directionHint}</p><p>封面右下角<br><b>1976</b></p></div></div><div class="actions">${actionButton('book-cover', '查看封面')}</div>`;
+    $('#panel-message').textContent = '筆記可以隨時回來重讀。';
+  }
+  if (action === 'book-cover') drawPanel('book');
+  if (action === 'open-box') openPanel('box');
+  if (action === 'take-lens') { say(game.act('take_lens')); render(); drawPanel('box'); }
+});
+$('#panel-content').addEventListener('submit', event => {
+  if (event.target.id !== 'code-form') return;
+  event.preventDefault();
+  const result = game.act('solve_box', $('#code').value);
+  say(result);
+  if (result.ok) { render(); drawPanel('box'); }
+});
 
 function closePanel() {
   $('#investigation').close();

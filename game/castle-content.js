@@ -25,8 +25,11 @@ export const letter = [
   '切記，真正的答案往往藏在最不起眼的地方。'
 ];
 
+export const poem = ['樂音迴響古堡間，', '色彩斑斕幻影連，', '桶中暗藏玄機在，', '內尋方知鎖鎖牽。'];
+export const directionHint = '日守天頂，月循右方，雙曜歸位，結界自解。';
+
 const objects = [
-  ['book', '魔法書', [43, 48, 15, 12], '書桌上的魔法書留下了學徒所需的線索。'],
+  ['book', '魔法書', [43, 48, 15, 12], `封面右下角：1976。\n${poem.join('\n')}\n${directionHint}`],
   ['trash', '垃圾桶', [27, 72, 8, 17], '黃銅垃圾桶裡藏著一只金屬密碼箱。'],
   ['painting', '深夜觀星者', [41, 4, 18, 40], '《深夜觀星者》描繪一位手持手稿、仰望夜空的魔法師。'],
   ['chart', '星象對照圖', [62, 17, 11, 20], '十二星座星象對照圖，可用來比對連線與星座符號。'],
@@ -37,10 +40,24 @@ const objects = [
 export const castleContent = {
   schemaVersion: 1,
   room: { id: 'castle_study', title: '禁忌實驗室：古堡逃脫', startViewId: 'study', description: '你是魔法師的學徒。實驗失控，讓你受困於古堡書房。' },
-  views: [{ id: 'study', title: '魔法師書房', hotspots: objects.map(([id, label, rect]) => ({ id, label, rect, interactionId: `inspect_${id}` })) }],
-  items: [],
+  views: [
+    { id: 'study', title: '魔法師書房', hotspots: objects.map(([id, label, rect]) => ({ id, label, rect, interactionId: `inspect_${id}` })) },
+    { id: 'details', title: '物件調查', hotspots: [
+      { id: 'box', label: '四位密碼箱', rect: [35, 35, 30, 30], interactionId: 'solve_box' },
+      { id: 'lens_pickup', label: '魔法透鏡', rect: [10, 10, 20, 20], interactionId: 'take_lens' }
+    ] }
+  ],
+  items: [{ id: 'lens', name: '魔法透鏡', description: '黃銅材質的單眼鏡片，長度約 12 公分。能顯現一般視角看不到的連線。', consumable: false }],
   clues: objects.map(([id,,, text]) => ({ id: `clue_${id}`, hotspotId: id, text })),
-  puzzles: [],
-  interactions: objects.map(([id,,, text]) => ({ id: `inspect_${id}`, kind: 'inspect', clueId: `clue_${id}`, feedback: { success: text } })),
-  initialState: { viewId: 'study', inventory: [], flags: { started: false, escaped: false } }
+  puzzles: [{
+    id: 'box_code', clueIds: ['clue_book', 'clue_trash'], targetHotspotId: 'box', answer: '1976', solvedFlag: 'box_open',
+    solution: '藏頭詩「樂色桶內」以諧音指向垃圾桶內；魔法書封面右下角的 1976 可直接開箱，箱內可取魔法透鏡。',
+    onSolved: [{ type: 'setFlag', flag: 'box_open', value: true }]
+  }],
+  interactions: [
+    ...objects.map(([id,,, text]) => ({ id: `inspect_${id}`, kind: 'inspect', clueId: `clue_${id}`, feedback: { success: text } })),
+    { id: 'solve_box', kind: 'enterCode', puzzleId: 'box_code', feedback: { success: '密碼箱打開了。箱內有一片黃銅透鏡。', failure: '密碼不對，請輸入四位半形數字。可以重新嘗試。', repeated: '密碼箱已經打開。' } },
+    { id: 'take_lens', kind: 'take', itemId: 'lens', onceFlag: 'lens_taken', requiresFlags: ['box_open'], feedback: { success: '你取得了魔法透鏡，可在道具欄查看。', failure: '先解開密碼箱，才能取得透鏡。', repeated: '透鏡已經取走了。' } }
+  ],
+  initialState: { viewId: 'study', inventory: [], flags: { started: false, escaped: false, box_open: false, lens_taken: false } }
 };

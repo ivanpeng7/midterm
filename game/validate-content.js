@@ -152,9 +152,13 @@ export function validateGameContent(content) {
     if (!isObject(interaction)) { fail(p, '必須是物件'); continue; }
     const kind = interaction.kind;
     if (!Object.hasOwn(kinds, kind)) { fail(`${p}.kind`, '不支援的互動種類'); continue; }
-    if (!shape(interaction, p, ['id', 'kind', 'feedback', ...kinds[kind]])) continue;
+    if (!shape(interaction, p, ['id', 'kind', 'feedback', ...kinds[kind]], ['requiresFlags'])) continue;
     collect(interaction.id, `${p}.id`, '互動');
-    if (shape(interaction.feedback, `${p}.feedback`, feedbackKeys[kind])) {
+    if ('requiresFlags' in interaction) {
+      for (const [j, name] of array(interaction.requiresFlags, `${p}.requiresFlags`, 1).entries()) flag(name, `${p}.requiresFlags[${j}]`);
+      text(interaction.feedback?.failure, `${p}.feedback.failure`);
+    }
+    if (shape(interaction.feedback, `${p}.feedback`, feedbackKeys[kind], 'requiresFlags' in interaction ? ['failure'] : [])) {
       for (const key of feedbackKeys[kind]) text(interaction.feedback[key], `${p}.feedback.${key}`);
     }
     const spot = views.flatMap(view => Array.isArray(view?.hotspots) ? view.hotspots : [])
@@ -186,6 +190,17 @@ export function validateGameContent(content) {
     }
   }
   for (const [i, clue] of clues.entries()) reference(clue?.hotspotId, `clues[${i}].hotspotId`, '可點區域');
+  const completed = new Set([...puzzles.map(p => p?.solvedFlag), ...interactions.map(a => a?.onceFlag)].filter(Boolean));
+  for (const [i, puzzle] of puzzles.entries()) {
+    for (const [j, effect] of (Array.isArray(puzzle?.onSolved) ? puzzle.onSolved : []).entries()) {
+      if (effect?.type === 'setFlag' && completed.has(effect.flag) && effect.value === false) fail(`puzzles[${i}].onSolved[${j}].value`, '不得重設完成旗標');
+    }
+  }
+  for (const [i, action] of interactions.entries()) {
+    for (const [j, effect] of (Array.isArray(action?.onSuccess) ? action.onSuccess : []).entries()) {
+      if (effect?.type === 'setFlag' && completed.has(effect.flag) && effect.value === false) fail(`interactions[${i}].onSuccess[${j}].value`, '不得重設完成旗標');
+    }
+  }
   return errors;
 }
 

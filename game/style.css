@@ -36,6 +36,19 @@ dialog::backdrop { background: #020d0bdb; backdrop-filter: blur(4px); }
 .art { position: relative; aspect-ratio: 1376 / 737; overflow: hidden; background: #15211a; }
 .art > img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 16px; }
+.inventory-item { display: flex; align-items: center; gap: 10px; font-size: 14px; padding: 6px 12px; }
+.inventory-item img { width: 42px; height: 42px; object-fit: cover; border-radius: 50%; }
+.book-pages .writing { position: absolute; color: #382816; font-family: 'DFKai-SB', 'Microsoft JhengHei', serif; font-size: clamp(13px, 1.9vw, 24px); line-height: 1.8; }
+.writing h3 { font-size: .85em; font-weight: 400; letter-spacing: .16em; margin: 0 0 18px; }
+.writing p { margin: 0 0 10px; }
+.writing strong { font-size: 1.18em; color: #833c1a; }
+.writing.poem { left: 24%; top: 23%; width: 25%; }
+.writing.hint { left: 54%; top: 23%; width: 22%; }
+.code-mask { position: absolute; left: 36%; top: 39%; width: 27%; height: 26%; background: #2a2216; border: 2px solid #a08145; }
+.code-label { position: absolute; left: 36%; top: 33%; width: 27%; text-align: center; color: #fff1d2; font-size: clamp(11px, 1.5vw, 18px); }
+.code-input { position: absolute; left: 37%; top: 42%; width: 25%; height: 20%; background: #201b13; color: #ffe0a3; border: 1px solid #c6a86b; text-align: center; font-size: clamp(20px, 4vw, 48px); letter-spacing: .1em; padding: 0; }
+.box-unlock { position: absolute; left: 42%; top: 73%; width: 16%; height: 9%; padding: 0; min-height: 0; font-size: clamp(12px, 1.7vw, 20px); }
+.empty-box { min-height: 200px; display: grid; place-content: center; border: 1px solid var(--line); }
 .intro { max-width: 1000px; padding: 0; border: none; background: #d4b37b; }
 .letter { padding: 155px 15% 60px; color: #342414; background: center / 100% 100% no-repeat; text-align: left; }
 .letter h2 { margin: 0 0 20px; text-align: center; letter-spacing: .16em; }
