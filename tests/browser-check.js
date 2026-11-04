@@ -84,6 +84,16 @@ async function runFlow(width, height, errors, entryUrl = url) {
     check(await panel().locator('.writing').evaluateAll(nodes => nodes.every(node => parseFloat(getComputedStyle(node).fontSize) >= 16)), 'M-01：書本正文在手機也至少 16px');
     await shot('book'); await noOverflow(); await close();
     await click('調查垃圾桶'); await loaded(); await click('調查桶內密碼箱'); await loaded();
+    assert.equal(await panel().getByText('四位密碼', { exact: true }).count(), 0, 'U-07：輸入框上方不顯示四位密碼文字');
+    const circleBounds = await panel().locator('.code-placeholder span').evaluateAll(circles => circles.map(circle => {
+      const ring = circle.getBoundingClientRect();
+      const frame = document.querySelector('.code-entry').getBoundingClientRect();
+      return { width: ring.width, height: ring.height, inside: ring.left >= frame.left && ring.right <= frame.right && ring.top >= frame.top && ring.bottom <= frame.bottom };
+    }));
+    assert.equal(circleBounds.length, 4, '空白密碼框有四個提示圈');
+    check(circleBounds.every(ring => ring.inside && Math.abs(ring.width - ring.height) < 1 && ring.width >= 12), '四個提示圈必須為完整圓形且位於輸入框內');
+    check(circleBounds.every(ring => Math.abs(ring.width - circleBounds[0].width) < 1), '四個提示圈大小一致');
+    await shot('empty-code');
     const inputBox = await page.getByRole('textbox', { name: '四位密碼' }).boundingBox();
     check(inputBox.height >= 44, 'M-02：密碼輸入至少 44px 高，手機可操作');
     if (errors) {
