@@ -19,13 +19,41 @@ const url = 'http://127.0.0.1:4173/game/index.html';
 const symbols = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
 const check = (condition, message) => assert.ok(condition, message);
 
+async function assertOnePage(page, stage) {
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const issues = await page.evaluate(() => {
+    const result = [];
+    const root = document.documentElement;
+    if (root.scrollHeight > innerHeight + 1 || root.scrollWidth > innerWidth + 1) result.push('主頁面超出視窗');
+    for (const node of document.querySelectorAll('.game-shell, dialog[open], #investigation[open] #panel-content, #intro[open] .letter')) {
+      if (node.scrollHeight > node.clientHeight + 1 || node.scrollWidth > node.clientWidth + 1) result.push(`${node.id || node.className} 內部需要捲動`);
+    }
+    for (const node of document.querySelectorAll('.masthead, .bottom-bar, footer, #mobile-objects button, dialog[open] button, dialog[open] input, dialog[open] canvas, dialog[open] .writing, dialog[open] .caption, dialog[open] #panel-message')) {
+      if (!node.checkVisibility()) continue;
+      const rect = node.getBoundingClientRect();
+      if (rect.left < -1 || rect.top < -1 || rect.right > innerWidth + 1 || rect.bottom > innerHeight + 1) result.push(`${node.getAttribute('aria-label') || node.id || node.className || node.tagName} 超出視窗`);
+      const dialog = node.closest('dialog');
+      if (dialog) {
+        const bounds = dialog.getBoundingClientRect();
+        if (rect.left < bounds.left - 1 || rect.top < bounds.top - 1 || rect.right > bounds.right + 1 || rect.bottom > bounds.bottom + 1) result.push(`${node.id || node.className || node.tagName} 被調查視窗裁切`);
+      }
+      if (node.classList.contains('writing')) {
+        const art = node.closest('.art').getBoundingClientRect();
+        if (rect.bottom > art.bottom + 1 || rect.right > art.right + 1) result.push('書本文字被底圖裁切');
+      }
+    }
+    return [...new Set(result)];
+  });
+  assert.deepEqual(issues, [], `U-08：${stage} 必須一頁顯示，不能捲動或裁切必要內容`);
+}
+
 async function runFlow(width, height, errors, entryUrl = url) {
   const page = await browser.newPage({ viewport: { width, height }, reducedMotion: 'reduce' });
   page.on('pageerror', error => report.errors.push(error.message));
   page.on('console', message => { if (['error','warning'].includes(message.type())) report.errors.push(message.text()); });
   page.on('response', response => { if (response.status() >= 400) report.errors.push(`${response.status()} ${response.url()}`); });
   const label = `${entryUrl.startsWith('file:') ? 'direct-' : ''}${width}-${errors ? 'R-01' : 'E-01'}`;
-  const shot = async name => { const path = join(output, `${label}-${name}.png`); await page.screenshot({ path, fullPage: true }); report.screenshots.push(path); };
+  const shot = async name => { await assertOnePage(page, `${label}-${name}`); const path = join(output, `${label}-${name}.png`); await page.screenshot({ path, fullPage: true }); report.screenshots.push(path); };
   const click = name => page.getByRole('button', { name, exact: true }).click();
   const close = () => click('關閉調查');
   const panel = () => page.locator('#panel-content');
@@ -240,6 +268,7 @@ try {
   // 手機先跑，能及早抓到文字與控制大小不足。
   await runFlow(390, 844, true);
   await runFlow(1366, 900, false);
+  await runFlow(1280, 720, false);
   assert.deepEqual(report.errors, [], '不得有瀏覽器錯誤、警告或缺圖');
   console.log(JSON.stringify(report, null, 2));
 } finally {
