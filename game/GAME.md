@@ -145,3 +145,23 @@ node tests/browser-check.js
 先行測試 `be12dd4` 抓到主頁面與工具列超出視窗，`ea1d270` 補查紅色封印遮字、較矮視窗及各操作頁面。117 項自動測試通過；十組瀏覽器驗收通過，完整通關尺寸涵蓋 1366×900、1280×720、800×600、390×844、390×700，另測 800×700 縮放。
 
 每個重要畫面及每次按鈕操作都會核對頁面／調查視窗的內容尺寸、按鈕與文字邊界，確認不需捲動且沒有裁切。證據在 `one-page-layout/` 子資料夾，詳見 `TEST.md` 第 15 節。其他瀏覽器與真實手機仍未測試。
+
+## 魔法書封面提前顯示內頁提示（2026-11-05）
+
+原因：`openPanel('book')` 將引擎提供的完整書本線索直接交給訊息欄，所以封面雖未翻開，藏頭詩與日月方向提示已出現。修正為封面只顯示翻書提示；按「翻開魔法書」才在內頁呈現原文，兩個訊息欄不再殘留完整線索。返回封面、關閉後再調查仍只顯示封面提示；封面圖片上的 1976 依企劃保留。
+
+先行測試提交 `6bf1ed4`：在直接開檔的桌面流程，U-09 檢查因封面已顯示「樂音迴響古堡間，」而失敗；提交後才修改畫面程式並重新產生 `browser.js`。既有引擎與線索原文保持不變，重要線索仍可透過翻書重看。
+
+修正後執行 `node --test`：117 項通過，0 失敗、0 略過；`node tests/browser-check.js` 十組檢查通過，涵蓋完整通關、錯誤後重試、直接開檔／本機網址、桌面及手機尺寸。每次封面初見、從內頁返回、關閉重開都檢查整個可見頁面沒有四句藏頭詩與日月提示；再翻開能讀回原文。瀏覽器為 Edge 156.0.4314.58，既有 Playwright 執行，Browser 技能未提供。正式流程錯誤清單為空，桌面與手機封面截圖已目視核對。
+
+本輪證據在 `C:/Users/ivanp/AppData/Local/Temp/midterm-book-before/`、`C:/Users/ivanp/AppData/Local/Temp/midterm-book-after/` 的 `browser-results.json` 與流程截圖；Node 輸出為 `C:/Users/ivanp/AppData/Local/Temp/midterm-book-node-tests.txt`。其他瀏覽器與真實手機尚未實測。
+
+## 道具說明重複顯示修正（2026-11-05）
+
+原因：道具欄的查看操作同時將 `game.describe(id)` 放入圖片下方段落及底部 `panel-message`，所以出現兩份相同說明。保留圖片下方的原文段落，清空本次調查底部的重複訊息；主畫面訊息改為「正在查看〔道具名稱〕。」。原本前往油畫及大門插槽的按鈕保留。
+
+先行測試提交 `3d1ff89`：U-10 在調查視窗找到兩份完全相同的透鏡說明，與預期一份不符。提交後才修正程式，並以 `node game/build-browser.js` 更新直接開檔版本。透鏡與水晶都有獨立的說明出現次數檢查，仍保留既有描述內容、機關與通關斷言。
+
+`node --test`：117 項通過、0 失敗、0 略過。`node tests/browser-check.js`：十組驗證通過，錯誤清單為空；Edge 156.0.4314.58，既有 Playwright 執行，Browser 技能未提供。涵蓋直接開檔、本機網址、1366×900／1280×720／800×600／390×844／390×700、道具取得與使用、錯誤後通關、魔法書封面提示不提前顯示及重新開始。桌面透鏡與手機水晶的截圖已目視確認說明各只有一份；手機依寬度正常換行，不截斷原文。
+
+證據：`C:/Users/ivanp/AppData/Local/Temp/midterm-item-before/`、`C:/Users/ivanp/AppData/Local/Temp/midterm-item-after/` 內的 `browser-results.json` 及 `lens-description`、`crystal-description` 截圖；Node 輸出為 `C:/Users/ivanp/AppData/Local/Temp/midterm-item-node.txt`。其他瀏覽器及真實手機尚未實測。
