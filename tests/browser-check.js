@@ -119,7 +119,11 @@ async function runFlow(width, height, errors) {
       assert.equal(await panel().locator('[data-action="moon"] b').textContent(),'→ 右');
       await panel().locator('[data-action="sun"]').click();
     } else { await panel().locator('[data-action="sun"]').click(); await panel().locator('[data-action="moon"]').click(); }
-    await loaded(); await shot('door'); await click('確認方向，解除結界');
+    await loaded(); await shot('door');
+    await page.route('**/asset/bg_study_unlocked*', async route => { await new Promise(resolve => setTimeout(resolve, 500)); await route.continue(); });
+    await click('確認方向，解除結界');
+    check(await page.locator('#ending').evaluate(node => node.hidden || (document.querySelector('#room-image').complete && document.querySelector('#room-image').naturalWidth > 0)), 'S-04：開門圖片尚未載入時，不先顯示成功結局');
+    await page.getByRole('heading', { name: '成功逃脫', exact: true }).waitFor();
     check(await page.getByRole('heading', { name: '成功逃脫', exact: true }).isVisible(), '顯示成功逃脫');
     check((await page.locator('#room-image').getAttribute('src')).includes('unlocked'), '成功後才換開門底圖');
     check(!await page.locator('#hotspots').isVisible(), '通關後關閉舊機關');
