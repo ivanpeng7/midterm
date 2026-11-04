@@ -19,12 +19,12 @@ const url = 'http://127.0.0.1:4173/game/index.html';
 const symbols = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
 const check = (condition, message) => assert.ok(condition, message);
 
-async function runFlow(width, height, errors) {
+async function runFlow(width, height, errors, entryUrl = url) {
   const page = await browser.newPage({ viewport: { width, height }, reducedMotion: 'reduce' });
   page.on('pageerror', error => report.errors.push(error.message));
   page.on('console', message => { if (['error','warning'].includes(message.type())) report.errors.push(message.text()); });
   page.on('response', response => { if (response.status() >= 400) report.errors.push(`${response.status()} ${response.url()}`); });
-  const label = `${width}-${errors ? 'R-01' : 'E-01'}`;
+  const label = `${entryUrl.startsWith('file:') ? 'direct-' : ''}${width}-${errors ? 'R-01' : 'E-01'}`;
   const shot = async name => { const path = join(output, `${label}-${name}.png`); await page.screenshot({ path, fullPage: true }); report.screenshots.push(path); };
   const click = name => page.getByRole('button', { name, exact: true }).click();
   const close = () => click('關閉調查');
@@ -41,9 +41,9 @@ async function runFlow(width, height, errors) {
     assert.equal(await button.locator('span').textContent(), symbol);
   };
   try {
-    await page.goto(url);
+    await page.goto(entryUrl);
     assert.equal(await page.title(), '禁忌實驗室：古堡逃脫');
-    assert.equal(page.url(), url);
+    assert.equal(page.url(), entryUrl);
     check(await page.getByText('實驗似乎發生了意料之外的變化，書房的大門已被結界封鎖。', { exact: true }).isVisible(), '信件原文顯示');
     await shot('intro'); await noOverflow();
     await click('明白，開始逃脫！');
@@ -191,6 +191,9 @@ async function checkAssetsMotionAndLoadFailure() {
 }
 
 try {
+  const directUrl = new URL('../game/index.html', import.meta.url).href;
+  await runFlow(1366, 900, true, directUrl);
+  await runFlow(390, 844, false, directUrl);
   await checkAssetsMotionAndLoadFailure();
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await mobile.goto(url);
