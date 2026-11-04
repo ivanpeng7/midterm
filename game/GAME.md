@@ -155,3 +155,13 @@ node tests/browser-check.js
 修正後執行 `node --test`：117 項通過，0 失敗、0 略過；`node tests/browser-check.js` 十組檢查通過，涵蓋完整通關、錯誤後重試、直接開檔／本機網址、桌面及手機尺寸。每次封面初見、從內頁返回、關閉重開都檢查整個可見頁面沒有四句藏頭詩與日月提示；再翻開能讀回原文。瀏覽器為 Edge 156.0.4314.58，既有 Playwright 執行，Browser 技能未提供。正式流程錯誤清單為空，桌面與手機封面截圖已目視核對。
 
 本輪證據在 `C:/Users/ivanp/AppData/Local/Temp/midterm-book-before/`、`C:/Users/ivanp/AppData/Local/Temp/midterm-book-after/` 的 `browser-results.json` 與流程截圖；Node 輸出為 `C:/Users/ivanp/AppData/Local/Temp/midterm-book-node-tests.txt`。其他瀏覽器與真實手機尚未實測。
+
+## 道具說明重複顯示修正（2026-11-05）
+
+原因：道具欄的查看操作同時將 `game.describe(id)` 放入圖片下方段落及底部 `panel-message`，所以出現兩份相同說明。保留圖片下方的原文段落，清空本次調查底部的重複訊息；主畫面訊息改為「正在查看〔道具名稱〕。」。原本前往油畫及大門插槽的按鈕保留。
+
+先行測試提交 `3d1ff89`：U-10 在調查視窗找到兩份完全相同的透鏡說明，與預期一份不符。提交後才修正程式，並以 `node game/build-browser.js` 更新直接開檔版本。透鏡與水晶都有獨立的說明出現次數檢查，仍保留既有描述內容、機關與通關斷言。
+
+`node --test`：117 項通過、0 失敗、0 略過。`node tests/browser-check.js`：十組驗證通過，錯誤清單為空；Edge 156.0.4314.58，既有 Playwright 執行，Browser 技能未提供。涵蓋直接開檔、本機網址、1366×900／1280×720／800×600／390×844／390×700、道具取得與使用、錯誤後通關、魔法書封面提示不提前顯示及重新開始。桌面透鏡與手機水晶的截圖已目視確認說明各只有一份；手機依寬度正常換行，不截斷原文。
+
+證據：`C:/Users/ivanp/AppData/Local/Temp/midterm-item-before/`、`C:/Users/ivanp/AppData/Local/Temp/midterm-item-after/` 內的 `browser-results.json` 及 `lens-description`、`crystal-description` 截圖；Node 輸出為 `C:/Users/ivanp/AppData/Local/Temp/midterm-item-node.txt`。其他瀏覽器及真實手機尚未實測。

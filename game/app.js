@@ -55,7 +55,13 @@ function render() {
     const button = document.createElement('button');
     button.className = 'inventory-item quiet';
     button.innerHTML = `<img src="${src(id)}" alt=""><span>查看${item.name}</span>`;
-    button.addEventListener('click', () => { say({ message: game.describe(id) }); $('#panel-title').textContent = item.name; $('#panel-content').innerHTML = `${image(id, item.name)}<p>${game.describe(id)}</p><div class="actions">${actionButton(id === 'lens' ? 'show-painting' : 'show-door', id === 'lens' ? '前往油畫調查' : '前往大門插槽')}</div>`; lastFocus = button; $('#investigation').showModal(); });
+    button.addEventListener('click', () => {
+      $('#message').textContent = `正在查看${item.name}。`;
+      $('#panel-message').textContent = '';
+      $('#panel-title').textContent = item.name;
+      $('#panel-content').innerHTML = `${image(id, item.name)}<p>${game.describe(id)}</p><div class="actions">${actionButton(id === 'lens' ? 'show-painting' : 'show-door', id === 'lens' ? '前往油畫調查' : '前往大門插槽')}</div>`;
+      lastFocus = button; $('#investigation').showModal();
+    });
     $('#inventory').append(button);
   }
 }
