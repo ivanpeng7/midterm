@@ -28,6 +28,12 @@ async function assertOnePage(page, stage) {
     for (const node of document.querySelectorAll('.game-shell, dialog[open], #investigation[open] #panel-content, #intro[open] .letter')) {
       if (node.scrollHeight > node.clientHeight + 1 || node.scrollWidth > node.clientWidth + 1) result.push(`${node.id || node.className} 內部需要捲動`);
     }
+    const letter = document.querySelector('#intro[open] .letter');
+    if (letter) {
+      const paper = letter.getBoundingClientRect();
+      const title = letter.querySelector('h2').getBoundingClientRect();
+      if (title.top < paper.top + paper.height * .31 - 2) result.push('開場標題與紅色封印圖案重疊');
+    }
     for (const node of document.querySelectorAll('.masthead, .bottom-bar, footer, #mobile-objects button, dialog[open] button, dialog[open] input, dialog[open] canvas, dialog[open] .writing, dialog[open] .caption, dialog[open] #panel-message')) {
       if (!node.checkVisibility()) continue;
       const rect = node.getBoundingClientRect();
@@ -54,7 +60,7 @@ async function runFlow(width, height, errors, entryUrl = url) {
   page.on('response', response => { if (response.status() >= 400) report.errors.push(`${response.status()} ${response.url()}`); });
   const label = `${entryUrl.startsWith('file:') ? 'direct-' : ''}${width}-${errors ? 'R-01' : 'E-01'}`;
   const shot = async name => { await assertOnePage(page, `${label}-${name}`); const path = join(output, `${label}-${name}.png`); await page.screenshot({ path, fullPage: true }); report.screenshots.push(path); };
-  const click = name => page.getByRole('button', { name, exact: true }).click();
+  const click = async name => { await page.getByRole('button', { name, exact: true }).click(); await assertOnePage(page, `${label}/${name}`); };
   const close = () => click('關閉調查');
   const panel = () => page.locator('#panel-content');
   const feedback = () => page.locator('#panel-message').textContent();
@@ -139,6 +145,7 @@ async function runFlow(width, height, errors, entryUrl = url) {
     await click('調查垃圾桶'); await click('調查桶內密碼箱'); check((await panel().innerText()).includes('透鏡已取走'), '透鏡不能重取'); await close();
     await click('調查深夜觀星者'); assert.equal(await panel().locator('canvas').count(), 0);
     await click('使用魔法透鏡'); assert.equal(await panel().locator('canvas').count(), 3); await loaded(); await shot('lens');
+    await panel().locator('.text-clues summary').click(); await assertOnePage(page, `${label}/展開透鏡文字線索`); await panel().locator('.text-clues summary').click();
     await click('切回一般視角'); assert.equal(await panel().locator('canvas').count(), 0); await click('使用魔法透鏡');
     await click('查看星象對照圖'); assert.equal(await panel().locator('canvas').count(), 12);
     assert.deepEqual(await panel().locator('.chart-grid b').allTextContents(), symbols);
@@ -269,6 +276,8 @@ try {
   await runFlow(390, 844, true);
   await runFlow(1366, 900, false);
   await runFlow(1280, 720, false);
+  await runFlow(800, 600, false);
+  await runFlow(390, 700, false);
   assert.deepEqual(report.errors, [], '不得有瀏覽器錯誤、警告或缺圖');
   console.log(JSON.stringify(report, null, 2));
 } finally {
