@@ -137,6 +137,11 @@ async function runFlow(width, height, errors) {
 }
 
 try {
+  const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await mobile.goto(url);
+  assert.equal(await mobile.locator('.mobile-objects button').count(), 6, 'U-02：手機提供六個容易點擊的文字入口');
+  check(await mobile.locator('.mobile-objects button').evaluateAll(buttons => buttons.every(button => button.getBoundingClientRect().height >= 44)), '手機入口至少 44px 高');
+  await mobile.close();
   // 手機先跑，能及早抓到文字與控制大小不足。
   await runFlow(390, 844, true);
   await runFlow(1366, 900, false);
