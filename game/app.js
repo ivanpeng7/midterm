@@ -12,7 +12,8 @@ const image = (key, alt) => `<div class="art"><img src="${src(key)}" alt="${alt}
 
 function render() {
   const state = game.state;
-  $('#room-image').src = src(state.flags.escaped ? 'ending' : 'study');
+  const roomSrc = src(state.flags.escaped ? 'ending' : 'study');
+  if ($('#room-image').getAttribute('src') !== roomSrc) $('#room-image').src = roomSrc;
   $('#ending').hidden = !state.flags.escaped;
   $('#hotspots').hidden = state.flags.escaped;
   $('#inventory').replaceChildren();
@@ -22,7 +23,7 @@ function render() {
     const button = document.createElement('button');
     button.className = 'inventory-item quiet';
     button.innerHTML = `<img src="${src(id)}" alt=""><span>查看${item.name}</span>`;
-    button.addEventListener('click', () => { say({ message: game.describe(id) }); $('#panel-title').textContent = item.name; $('#panel-content').innerHTML = `${image(id, item.name)}<p>${game.describe(id)}</p>`; lastFocus = button; $('#investigation').showModal(); });
+    button.addEventListener('click', () => { say({ message: game.describe(id) }); $('#panel-title').textContent = item.name; $('#panel-content').innerHTML = `${image(id, item.name)}<p>${game.describe(id)}</p><div class="actions">${actionButton(id === 'lens' ? 'show-painting' : 'show-door', id === 'lens' ? '前往油畫調查' : '前往大門插槽')}</div>`; lastFocus = button; $('#investigation').showModal(); });
     $('#inventory').append(button);
   }
 }
@@ -59,6 +60,9 @@ function drawPanel(id, reveal = false) {
   } else if (id === 'stars') {
     if (game.state.flags.painting_open) { drawCompartment(false); return; }
     content.innerHTML = `<p class="caption">不限排列順序 · 點擊任一方框，循環切換十二種星座符號。</p><div class="art symbols-art"><img src="${src('stars')}" alt="三格星座符號機關">${symbolChoices.map((choice,i) => `<button data-action="cycle-symbol" data-slot="${i}" class="symbol-choice slot-${i}" aria-label="第 ${i+1} 格：${constellations[choice].name} ${constellations[choice].symbol}"><span>${constellations[choice].symbol}</span><small>${constellations[choice].name}</small></button>`).join('')}</div><div class="actions">${actionButton('solve-stars', '確認星座符號')}${actionButton('show-chart', '查看星象對照圖', 'quiet')}${actionButton('show-painting', '返回油畫', 'quiet')}</div>`;
+  } else if (id === 'door') {
+    const flags = game.state.flags;
+    content.innerHTML = `<div class="art door-art"><img src="${src('door')}" alt="大門黃銅日月機關，左太陽、右月亮、中央水晶插槽"><button data-action="sun" class="direction-control sun-control" aria-label="太陽方向：${flags.sun_up ? '上' : '下'}，點擊切換" aria-disabled="${!flags.crystal_inserted}"><span>☀</span><b>${flags.sun_up ? '↑ 上' : '↓ 下'}</b></button><button data-action="insert-crystal" class="door-slot ${flags.crystal_inserted ? 'filled' : ''}" aria-label="${flags.crystal_inserted ? '水晶已嵌入插槽' : '放入日月雙色水晶'}">${flags.crystal_inserted ? `<img class="crystal-sprite" src="${src('crystal')}" alt="左金右銀的水晶已嵌入">` : '<span>水晶<br>插槽</span>'}</button><button data-action="moon" class="direction-control moon-control" aria-label="月亮方向：${flags.moon_right ? '右' : '左'}，點擊切換" aria-disabled="${!flags.crystal_inserted}"><span>☾</span><b>${flags.moon_right ? '→ 右' : '← 左'}</b></button></div><p class="caption">${flags.crystal_inserted ? '水晶已放入 · 點擊太陽切換上下，點擊月亮切換左右。' : '機關尚未啟動 · 需要日月雙色水晶。'}</p><div class="actions">${actionButton('solve-door', '確認方向，解除結界')}${actionButton('show-book', '重看魔法書', 'quiet')}</div>`;
   } else {
     const key = { painting: 'painting', chart: 'chart', stars: 'stars', door: 'door' }[id];
     content.innerHTML = image(key, castleContent.views[0].hotspots.find(s => s.id === id).label);
@@ -85,6 +89,19 @@ $('#panel-content').addEventListener('click', event => {
   if (action === 'show-chart') openPanel('chart');
   if (action === 'show-painting') openPanel('painting');
   if (action === 'show-stars') openPanel('stars');
+  if (action === 'show-door') openPanel('door');
+  if (action === 'show-book') openPanel('book');
+  if (action === 'insert-crystal') { say(game.act('insert_crystal', 'crystal')); render(); drawPanel('door'); }
+  if (action === 'sun' || action === 'moon') {
+    const flags = game.state.flags;
+    const direction = action === 'sun' ? (flags.sun_up ? 'down' : 'up') : (flags.moon_right ? 'left' : 'right');
+    say(game.setDirection(action, direction)); drawPanel('door');
+    $(`[data-action="${action}"]`).focus();
+  }
+  if (action === 'solve-door') {
+    const result = game.act('solve_door'); say(result);
+    if (result.ok) { closePanel(); render(); $('#scene').classList.add('escaped'); $('#ending h2').setAttribute('tabindex', '-1'); $('#ending h2').focus(); }
+  }
   if (action === 'cycle-symbol') {
     const slot = Number(event.target.closest('[data-slot]').dataset.slot);
     symbolChoices[slot] = (symbolChoices[slot] + 1) % constellations.length;
@@ -118,6 +135,7 @@ function restart() {
   $('#investigation').close();
   game.restart();
   symbolChoices = [0, 0, 0];
+  $('#scene').classList.remove('escaped');
   render();
   $('#intro').classList.remove('leaving');
   $('#intro').showModal();

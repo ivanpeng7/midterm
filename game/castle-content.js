@@ -46,7 +46,9 @@ export const castleContent = {
       { id: 'box', label: '四位密碼箱', rect: [35, 35, 30, 30], interactionId: 'solve_box' },
       { id: 'lens_pickup', label: '魔法透鏡', rect: [10, 10, 20, 20], interactionId: 'take_lens' },
       { id: 'symbol_lock', label: '三格星座機關', rect: [24, 40, 53, 29], interactionId: 'solve_stars' },
-      { id: 'crystal_pickup', label: '日月雙色水晶', rect: [37, 37, 16, 30], interactionId: 'take_crystal' }
+      { id: 'crystal_pickup', label: '日月雙色水晶', rect: [37, 37, 16, 30], interactionId: 'take_crystal' },
+      { id: 'crystal_slot', label: '水晶插槽', rect: [44, 40, 12, 25], interactionId: 'insert_crystal' },
+      { id: 'door_lock', label: '日月方向機關', rect: [22, 20, 57, 60], interactionId: 'solve_door' }
     ] }
   ],
   items: [
@@ -62,13 +64,19 @@ export const castleContent = {
     id: 'star_symbols', answerType: 'symbols', clueIds: ['clue_painting', 'clue_chart'], targetHotspotId: 'symbol_lock', answer: '♌♋♏', solvedFlag: 'painting_open',
     solution: '用透鏡查看油畫；將夜空、長袍、手稿的連線與十二宮格比對，分別為獅子、巨蟹、天蠍；三符號各一次，不限順序。解開後油畫右移，暗格水晶自動轉亮並可拾取。',
     onSolved: [{ type: 'setFlag', flag: 'painting_open', value: true }]
+  }, {
+    id: 'sun_moon', answerType: 'directions', clueIds: ['clue_book', 'clue_door'], targetHotspotId: 'door_lock', answer: 'up,right', solvedFlag: 'escaped',
+    solution: '將日月雙色水晶放入大門插槽；依魔法書「日守天頂，月循右方」將太陽朝上、月亮朝右，確認後解除結界並逃脫。',
+    onSolved: [{ type: 'setFlag', flag: 'escaped', value: true }]
   }],
   interactions: [
     ...objects.map(([id,,, text]) => ({ id: `inspect_${id}`, kind: 'inspect', clueId: `clue_${id}`, feedback: { success: text } })),
     { id: 'solve_box', kind: 'enterCode', puzzleId: 'box_code', feedback: { success: '密碼箱打開了。箱內有一片黃銅透鏡。', failure: '密碼不對，請輸入四位半形數字。可以重新嘗試。', repeated: '密碼箱已經打開。' } },
     { id: 'take_lens', kind: 'take', itemId: 'lens', onceFlag: 'lens_taken', requiresFlags: ['box_open'], feedback: { success: '你取得了魔法透鏡，可在道具欄查看。', failure: '先解開密碼箱，才能取得透鏡。', repeated: '透鏡已經取走了。' } },
     { id: 'solve_stars', kind: 'enterSymbols', puzzleId: 'star_symbols', requiresFlags: ['lens_taken', 'lens_observed'], feedback: { success: '喀嚓，油畫下的機關解開了。', failure: '機關沒有反應。請用透鏡調查油畫，再比對三個不同的星座符號。', repeated: '油畫暗格已經打開。' } },
-    { id: 'take_crystal', kind: 'take', itemId: 'crystal', onceFlag: 'crystal_taken', requiresFlags: ['painting_open'], feedback: { success: '你取得了日月雙色水晶。', failure: '需要先解開油畫機關。', repeated: '暗格的水晶已經取走了。' } }
+    { id: 'take_crystal', kind: 'take', itemId: 'crystal', onceFlag: 'crystal_taken', requiresFlags: ['painting_open'], feedback: { success: '你取得了日月雙色水晶。', failure: '需要先解開油畫機關。', repeated: '暗格的水晶已經取走了。' } },
+    { id: 'insert_crystal', kind: 'useItem', itemId: 'crystal', onceFlag: 'crystal_inserted', requiresFlags: ['crystal_taken'], onSuccess: [{ type: 'removeItem', itemId: 'crystal' }, { type: 'setFlag', flag: 'crystal_inserted', value: true }], feedback: { success: '水晶已嵌入插槽，日月方向控制啟動。', failure: '需要先取得日月雙色水晶，並選擇這顆水晶放入。', repeated: '水晶已經嵌入插槽，無須再次放入。' } },
+    { id: 'solve_door', kind: 'enterDirections', puzzleId: 'sun_moon', requiresFlags: ['crystal_inserted'], feedback: { success: '結界散去，大門開啟。你成功逃脫！', failure: '結界仍在。請先放入水晶，再依魔法書調整日月方向。', repeated: '大門已經開啟，你已成功逃脫。' } }
   ],
-  initialState: { viewId: 'study', inventory: [], flags: { started: false, escaped: false, box_open: false, lens_taken: false, lens_active: false, lens_observed: false, painting_open: false, crystal_taken: false } }
+  initialState: { viewId: 'study', inventory: [], flags: { started: false, escaped: false, box_open: false, lens_taken: false, lens_active: false, lens_observed: false, painting_open: false, crystal_taken: false, crystal_inserted: false, sun_up: false, moon_right: false } }
 };

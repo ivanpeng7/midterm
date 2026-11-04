@@ -78,6 +78,21 @@ dialog::backdrop { background: #020d0bdb; backdrop-filter: blur(4px); }
 @keyframes slide-painting { to { transform: translateX(100%); } }
 @keyframes dim-to-light { 0%,45% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes light-up { 0%,45% { opacity: 0; } 100% { opacity: 1; } }
+.direction-control { position: absolute; top: 37%; width: 10.5%; height: 28%; background: #34291c; border: 2px solid #cbaa68; color: #ffe1a1; padding: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+.direction-control:hover { background: #55442c; }
+.direction-control[aria-disabled="true"] { opacity: .7; }
+.direction-control span { font-size: clamp(18px, 4vw, 48px); }
+.direction-control b { font-size: clamp(12px, 1.7vw, 22px); }
+.sun-control { left: 23%; } .moon-control { left: 66.3%; }
+.door-slot { position: absolute; left: 44%; top: 41%; width: 12%; height: 23%; min-height: 0; padding: 0; border: 1px solid #97805d; border-radius: 50%; background: #101610; color: #dbc38d; font-size: clamp(10px, 1.5vw, 18px); }
+.door-slot:hover { background: #29382a; }
+.door-slot.filled { filter: drop-shadow(0 0 18px #e2ca89); }
+.scene.escaped::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: #8178ed; animation: dissolve-barrier 1.4s forwards; }
+.scene.escaped #room-image { animation: reveal-door 1.4s; }
+.scene.escaped .ending { animation: ending-in 1.8s; }
+@keyframes dissolve-barrier { 0% { opacity: .8; } 100% { opacity: 0; } }
+@keyframes reveal-door { 0% { filter: brightness(3) saturate(.5); } 100% { filter: none; } }
+@keyframes ending-in { 0%,60% { opacity: 0; } 100% { opacity: 1; } }
 .intro { max-width: 1000px; padding: 0; border: none; background: #d4b37b; }
 .letter { padding: 155px 15% 60px; color: #342414; background: center / 100% 100% no-repeat; text-align: left; }
 .letter h2 { margin: 0 0 20px; text-align: center; letter-spacing: .16em; }

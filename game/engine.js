@@ -43,8 +43,15 @@ export function createGame(content = castleContent) {
       if (panel === 'painting' && state.flags.lens_active) state.flags.lens_observed = true;
       return reply(true, state.flags.lens_active ? '已啟用透鏡視角。仔細比對三處連線與星象對照圖。' : '已切回一般視角。');
     },
+    setDirection(control, direction) {
+      if (!state.flags.started || state.flags.escaped || !state.flags.crystal_inserted) return reply(false, '先將日月雙色水晶放入插槽，才能啟動方向控制。');
+      const choices = { sun: ['up','down'], moon: ['left','right'] };
+      if (!choices[control]?.includes(direction)) return reply(false, '太陽只能上下切換，月亮只能左右切換。');
+      state.flags[control === 'sun' ? 'sun_up' : 'moon_right'] = direction === 'up' || direction === 'right';
+      return reply(true, `${control === 'sun' ? '太陽' : '月亮'}現在朝${{ up: '上', down: '下', left: '左', right: '右' }[direction]}。`);
+    },
     describe(id) { return content.items.find(item => item.id === id && state.inventory.includes(id))?.description ?? '目前沒有這個道具。'; },
-    start() { state.flags.started = true; return reply(true, '仔細調查書房，尋找解除結界的方法。'); },
+    start() { if (state.flags.started || state.flags.escaped) return reply(false, '這一局已經開始。'); state.flags.started = true; return reply(true, '仔細調查書房，尋找解除結界的方法。'); },
     open(id) {
       if (!state.flags.started || state.flags.escaped) return reply(false, '請先開始新遊戲。');
       const spot = content.views.flatMap(view => view.hotspots).find(spot => spot.id === id);
@@ -69,6 +76,9 @@ export function createGame(content = castleContent) {
       } else if (action.kind === 'enterSymbols') {
         const answer = [...puzzle.answer].sort();
         if (!Array.isArray(input) || input.length !== answer.length || !input.every(symbol => typeof symbol === 'string') || [...input].sort().some((symbol,i) => symbol !== answer[i])) return reply(false, action.feedback.failure);
+        effects = puzzle.onSolved;
+      } else if (action.kind === 'enterDirections') {
+        if (`${state.flags.sun_up ? 'up' : 'down'},${state.flags.moon_right ? 'right' : 'left'}` !== puzzle.answer) return reply(false, action.feedback.failure);
         effects = puzzle.onSolved;
       } else if (action.kind === 'take') {
         effects = [{ type: 'addItem', itemId: action.itemId }, { type: 'setFlag', flag: action.onceFlag, value: true }];

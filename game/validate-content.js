@@ -134,6 +134,8 @@ export function validateGameContent(content) {
     if (puzzle.answerType === 'symbols') {
       const symbols = typeof puzzle.answer === 'string' ? [...puzzle.answer] : [];
       if (symbols.length !== 3 || new Set(symbols).size !== 3 || !symbols.every(symbol => '♈♉♊♋♌♍♎♏♐♑♒♓'.includes(symbol))) fail(`${p}.answer`, '必須是三個不同的星座符號');
+    } else if (puzzle.answerType === 'directions') {
+      if (typeof puzzle.answer !== 'string' || !/^(up|down),(left|right)$/.test(puzzle.answer)) fail(`${p}.answer`, '必須是太陽上下與月亮左右的方向組合');
     } else {
       if ('answerType' in puzzle && puzzle.answerType !== 'code') fail(`${p}.answerType`, '不支援的答案種類');
       if (typeof puzzle.answer !== 'string' || !/^\d+$/.test(puzzle.answer)) fail(`${p}.answer`, '必須是非空半形數字字串');
@@ -145,12 +147,12 @@ export function validateGameContent(content) {
   }
 
   const kinds = {
-    inspect: ['clueId'], take: ['itemId', 'onceFlag'], enterCode: ['puzzleId'], enterSymbols: ['puzzleId'],
+    inspect: ['clueId'], take: ['itemId', 'onceFlag'], enterCode: ['puzzleId'], enterSymbols: ['puzzleId'], enterDirections: ['puzzleId'],
     useItem: ['itemId', 'onceFlag', 'onSuccess'], switchView: ['toViewId']
   };
   const feedbackKeys = {
     inspect: ['success'], take: ['success', 'repeated'], enterCode: ['success', 'failure', 'repeated'],
-    useItem: ['success', 'failure', 'repeated'], switchView: ['success'], enterSymbols: ['success', 'failure', 'repeated']
+    useItem: ['success', 'failure', 'repeated'], switchView: ['success'], enterSymbols: ['success', 'failure', 'repeated'], enterDirections: ['success', 'failure', 'repeated']
   };
   const interactions = array(content.interactions, 'interactions');
   for (const [i, interaction] of interactions.entries()) {
@@ -177,11 +179,11 @@ export function validateGameContent(content) {
       reference(interaction.itemId, `${p}.itemId`, '道具');
       flag(interaction.onceFlag, `${p}.onceFlag`);
     }
-    if (kind === 'enterCode' || kind === 'enterSymbols') {
+    if (kind === 'enterCode' || kind === 'enterSymbols' || kind === 'enterDirections') {
       reference(interaction.puzzleId, `${p}.puzzleId`, '謎題');
       if (puzzles.find(puzzle => puzzle?.id === interaction.puzzleId)?.targetHotspotId !== spot?.id) fail(`${p}.puzzleId`, '謎題目標必須是觸發區域');
       const type = puzzles.find(puzzle => puzzle?.id === interaction.puzzleId)?.answerType ?? 'code';
-      if ((kind === 'enterSymbols' && type !== 'symbols') || (kind === 'enterCode' && type !== 'code')) fail(`${p}.puzzleId`, '互動與答案種類不一致');
+      if ({ enterCode: 'code', enterSymbols: 'symbols', enterDirections: 'directions' }[kind] !== type) fail(`${p}.puzzleId`, '互動與答案種類不一致');
     }
     if (kind === 'useItem') {
       effects(interaction.onSuccess, `${p}.onSuccess`);
