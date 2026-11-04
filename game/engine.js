@@ -40,6 +40,7 @@ export function createGame(content = castleContent) {
     toggleLens() {
       if (!state.flags.started || state.flags.escaped || !state.inventory.includes('lens')) return reply(false, '需要先取得魔法透鏡。');
       state.flags.lens_active = !state.flags.lens_active;
+      if (panel === 'painting' && state.flags.lens_active) state.flags.lens_observed = true;
       return reply(true, state.flags.lens_active ? '已啟用透鏡視角。仔細比對三處連線與星象對照圖。' : '已切回一般視角。');
     },
     describe(id) { return content.items.find(item => item.id === id && state.inventory.includes(id))?.description ?? '目前沒有這個道具。'; },
@@ -50,6 +51,7 @@ export function createGame(content = castleContent) {
       const interaction = content.interactions.find(action => action.id === spot?.interactionId);
       if (!interaction) return reply(false, '找不到這個調查物件。');
       panel = id;
+      if (id === 'painting' && state.flags.lens_active && state.inventory.includes('lens')) state.flags.lens_observed = true;
       return reply(true, content.clues.find(clue => clue.id === interaction.clueId)?.text ?? `正在調查${spot.label}。`);
     },
     act(id, input) {
@@ -63,6 +65,10 @@ export function createGame(content = castleContent) {
       let effects;
       if (action.kind === 'enterCode') {
         if (typeof input !== 'string' || input.trim() !== puzzle.answer) return reply(false, action.feedback.failure);
+        effects = puzzle.onSolved;
+      } else if (action.kind === 'enterSymbols') {
+        const answer = [...puzzle.answer].sort();
+        if (!Array.isArray(input) || input.length !== answer.length || !input.every(symbol => typeof symbol === 'string') || [...input].sort().some((symbol,i) => symbol !== answer[i])) return reply(false, action.feedback.failure);
         effects = puzzle.onSolved;
       } else if (action.kind === 'take') {
         effects = [{ type: 'addItem', itemId: action.itemId }, { type: 'setFlag', flag: action.onceFlag, value: true }];

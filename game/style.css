@@ -63,6 +63,21 @@ dialog::backdrop { background: #020d0bdb; backdrop-filter: blur(4px); }
 .chart-grid b { font-family: 'Segoe UI Symbol', sans-serif; font-size: clamp(13px, 2.4vw, 28px); }
 .text-clues { margin-top: 16px; color: var(--muted); font-size: 14px; }
 .text-clues summary { cursor: pointer; padding: 10px 0; }
+.symbol-choice { position: absolute; top: 41%; width: 13%; height: 25%; background: #14251f; border: 2px solid #cba85e; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; color: #ffe3a0; }
+.symbol-choice:hover { background: #304e40; }
+.symbol-choice span { font-family: 'Segoe UI Symbol', sans-serif; font-size: clamp(28px, 5vw, 64px); line-height: 1.1; }
+.symbol-choice small { font-size: clamp(9px, 1.2vw, 14px); margin-top: 6px; }
+.slot-0 { left: 24%; } .slot-1 { left: 43.5%; } .slot-2 { left: 62.5%; }
+.crystal-holder { position: absolute; left: 37%; top: 37%; width: 16%; height: 30%; padding: 0; border: none; border-radius: 50%; background: transparent; filter: drop-shadow(0 0 15px #f3d580); }
+.crystal-holder:hover { background: transparent; filter: drop-shadow(0 0 22px #ffeab7); }
+.crystal-sprite { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; clip-path: ellipse(38% 39% at 50% 50%); }
+.crystal-dim { opacity: 0; }
+.sliding-painting { position: absolute; inset: 0; animation: slide-painting .9s forwards; pointer-events: none; }
+.revealing .crystal-dim { animation: dim-to-light 1.5s forwards; }
+.revealing .crystal-lit { animation: light-up 1.5s forwards; }
+@keyframes slide-painting { to { transform: translateX(100%); } }
+@keyframes dim-to-light { 0%,45% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes light-up { 0%,45% { opacity: 0; } 100% { opacity: 1; } }
 .intro { max-width: 1000px; padding: 0; border: none; background: #d4b37b; }
 .letter { padding: 155px 15% 60px; color: #342414; background: center / 100% 100% no-repeat; text-align: left; }
 .letter h2 { margin: 0 0 20px; text-align: center; letter-spacing: .16em; }

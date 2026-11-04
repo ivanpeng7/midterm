@@ -127,11 +127,17 @@ export function validateGameContent(content) {
   const puzzles = array(content.puzzles, 'puzzles');
   for (const [i, puzzle] of puzzles.entries()) {
     const p = `puzzles[${i}]`;
-    if (!shape(puzzle, p, ['id', 'clueIds', 'targetHotspotId', 'answer', 'solution', 'solvedFlag', 'onSolved'])) continue;
+    if (!shape(puzzle, p, ['id', 'clueIds', 'targetHotspotId', 'answer', 'solution', 'solvedFlag', 'onSolved'], ['answerType'])) continue;
     collect(puzzle.id, `${p}.id`, '謎題');
     for (const [j, clueId] of array(puzzle.clueIds, `${p}.clueIds`, 1).entries()) reference(clueId, `${p}.clueIds[${j}]`, '線索');
     reference(puzzle.targetHotspotId, `${p}.targetHotspotId`, '可點區域');
-    if (typeof puzzle.answer !== 'string' || !/^\d+$/.test(puzzle.answer)) fail(`${p}.answer`, '必須是非空半形數字字串');
+    if (puzzle.answerType === 'symbols') {
+      const symbols = typeof puzzle.answer === 'string' ? [...puzzle.answer] : [];
+      if (symbols.length !== 3 || new Set(symbols).size !== 3 || !symbols.every(symbol => '♈♉♊♋♌♍♎♏♐♑♒♓'.includes(symbol))) fail(`${p}.answer`, '必須是三個不同的星座符號');
+    } else {
+      if ('answerType' in puzzle && puzzle.answerType !== 'code') fail(`${p}.answerType`, '不支援的答案種類');
+      if (typeof puzzle.answer !== 'string' || !/^\d+$/.test(puzzle.answer)) fail(`${p}.answer`, '必須是非空半形數字字串');
+    }
     text(puzzle.solution, `${p}.solution`);
     flag(puzzle.solvedFlag, `${p}.solvedFlag`);
     effects(puzzle.onSolved, `${p}.onSolved`);
@@ -139,12 +145,12 @@ export function validateGameContent(content) {
   }
 
   const kinds = {
-    inspect: ['clueId'], take: ['itemId', 'onceFlag'], enterCode: ['puzzleId'],
+    inspect: ['clueId'], take: ['itemId', 'onceFlag'], enterCode: ['puzzleId'], enterSymbols: ['puzzleId'],
     useItem: ['itemId', 'onceFlag', 'onSuccess'], switchView: ['toViewId']
   };
   const feedbackKeys = {
     inspect: ['success'], take: ['success', 'repeated'], enterCode: ['success', 'failure', 'repeated'],
-    useItem: ['success', 'failure', 'repeated'], switchView: ['success']
+    useItem: ['success', 'failure', 'repeated'], switchView: ['success'], enterSymbols: ['success', 'failure', 'repeated']
   };
   const interactions = array(content.interactions, 'interactions');
   for (const [i, interaction] of interactions.entries()) {
@@ -171,9 +177,11 @@ export function validateGameContent(content) {
       reference(interaction.itemId, `${p}.itemId`, '道具');
       flag(interaction.onceFlag, `${p}.onceFlag`);
     }
-    if (kind === 'enterCode') {
+    if (kind === 'enterCode' || kind === 'enterSymbols') {
       reference(interaction.puzzleId, `${p}.puzzleId`, '謎題');
       if (puzzles.find(puzzle => puzzle?.id === interaction.puzzleId)?.targetHotspotId !== spot?.id) fail(`${p}.puzzleId`, '謎題目標必須是觸發區域');
+      const type = puzzles.find(puzzle => puzzle?.id === interaction.puzzleId)?.answerType ?? 'code';
+      if ((kind === 'enterSymbols' && type !== 'symbols') || (kind === 'enterCode' && type !== 'code')) fail(`${p}.puzzleId`, '互動與答案種類不一致');
     }
     if (kind === 'useItem') {
       effects(interaction.onSuccess, `${p}.onSuccess`);

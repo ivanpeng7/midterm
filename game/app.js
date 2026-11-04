@@ -6,6 +6,7 @@ const $ = selector => document.querySelector(selector);
 const src = key => `../${assets[key]}`;
 let game;
 let lastFocus;
+let symbolChoices = [0, 0, 0];
 const say = result => { $('#message').textContent = result.message; $('#panel-message').textContent = result.message; };
 const image = (key, alt) => `<div class="art"><img src="${src(key)}" alt="${alt}"></div>`;
 
@@ -38,7 +39,7 @@ function openPanel(id) {
 }
 
 const actionButton = (id, text, className = '') => `<button data-action="${id}" class="${className}">${text}</button>`;
-function drawPanel(id) {
+function drawPanel(id, reveal = false) {
   const content = $('#panel-content');
   if (id === 'book') {
     content.innerHTML = `${image('bookCover', '魔法書封面，右下角以金色燙金顯示 1976，沒有日月圖騰')}<div class="actions">${actionButton('read-book', '翻開魔法書')}</div>`;
@@ -50,15 +51,25 @@ function drawPanel(id) {
       if (game.state.flags.lens_taken) content.innerHTML = '<div class="empty-box">密碼箱已開啟，透鏡已取走。</div>';
     } else content.innerHTML = `<form id="code-form"><div class="art lockbox-art"><img src="${src('lockbox')}" alt="哥德式密碼箱"><div class="code-mask"></div><label class="code-label" for="code">四位密碼</label><input id="code" name="code" class="code-input" type="text" inputmode="numeric" maxlength="8" autocomplete="off" aria-label="四位密碼" placeholder="○ ○ ○ ○"><button class="box-unlock" type="submit">開鎖</button></div></form>`;
   } else if (id === 'painting') {
+    if (game.state.flags.painting_open) { drawCompartment(reveal); return; }
     const enabled = game.state.flags.lens_active;
     content.innerHTML = `<div class="art painting-art ${enabled ? 'lens-active' : ''}"><img src="${src(enabled ? 'paintingLens' : 'painting')}" alt="《深夜觀星者》${enabled ? '透鏡視角' : '一般視角'}">${game.paintingClues.map((clue,i) => `<figure class="tracing tracing-${i}"><figcaption>${clue.region}</figcaption><canvas width="260" height="160" data-symbol="${clue.symbol}" role="img" aria-label="${clue.region}的星象連線"></canvas></figure>`).join('')}</div><div class="actions">${actionButton('toggle-lens', enabled ? '切回一般視角' : '使用魔法透鏡')}${actionButton('show-chart', '查看星象對照圖', 'quiet')}${actionButton('show-stars', '操作星座機關', 'quiet')}</div>${enabled ? '<details class="text-clues"><summary>以文字查看透鏡線索</summary><p>夜空：獅子座 ♌；長袍：巨蟹座 ♋；手稿：天蠍座 ♏。</p></details>' : '<p class="caption">一般視角 · 仔細觀察油畫，或使用道具調查。</p>'}`;
   } else if (id === 'chart') {
     content.innerHTML = `<div class="art chart-art"><img src="${src('chart')}" alt="十二宮格星象對照圖外框"><div class="chart-grid">${constellations.map(c => `<figure><canvas width="260" height="150" data-symbol="${c.symbol}" role="img" aria-label="${c.name}連線圖"></canvas><figcaption>${c.name} <b>${c.symbol}</b></figcaption></figure>`).join('')}</div></div><p class="caption">將油畫中的連線，與對照圖內的形狀相比。</p><div class="actions">${actionButton('show-painting', '返回油畫', 'quiet')}${actionButton('show-stars', '操作星座機關')}</div>`;
+  } else if (id === 'stars') {
+    if (game.state.flags.painting_open) { drawCompartment(false); return; }
+    content.innerHTML = `<p class="caption">不限排列順序 · 點擊任一方框，循環切換十二種星座符號。</p><div class="art symbols-art"><img src="${src('stars')}" alt="三格星座符號機關">${symbolChoices.map((choice,i) => `<button data-action="cycle-symbol" data-slot="${i}" class="symbol-choice slot-${i}" aria-label="第 ${i+1} 格：${constellations[choice].name} ${constellations[choice].symbol}"><span>${constellations[choice].symbol}</span><small>${constellations[choice].name}</small></button>`).join('')}</div><div class="actions">${actionButton('solve-stars', '確認星座符號')}${actionButton('show-chart', '查看星象對照圖', 'quiet')}${actionButton('show-painting', '返回油畫', 'quiet')}</div>`;
   } else {
     const key = { painting: 'painting', chart: 'chart', stars: 'stars', door: 'door' }[id];
     content.innerHTML = image(key, castleContent.views[0].hotspots.find(s => s.id === id).label);
   }
   for (const canvas of content.querySelectorAll('canvas[data-symbol]')) drawGraph(canvas, constellations.find(c => c.symbol === canvas.dataset.symbol).graph);
+}
+
+function drawCompartment(reveal) {
+  const taken = game.state.flags.crystal_taken;
+  $('#panel-title').textContent = '油畫暗格';
+  $('#panel-content').innerHTML = `<div class="art compartment-art ${reveal ? 'revealing' : ''}"><img src="${src('compartment')}" alt="油畫向右滑開，露出牆上暗格">${taken ? '' : `<button data-action="take-crystal" class="crystal-holder" aria-label="取得日月雙色水晶"><img class="crystal-sprite crystal-dim" src="${src('crystalDim')}" alt=""><img class="crystal-sprite crystal-lit" src="${src('crystal')}" alt="左金右銀的日月雙色水晶"></button>`}${reveal ? `<img class="sliding-painting" src="${src('painting')}" alt="">` : ''}</div>${taken ? '<p class="caption">水晶已取走，暗格是空的。</p>' : '<p class="caption">點擊暗格內的水晶拾取。</p>'}<div class="actions">${actionButton('show-chart', '查看星象對照圖', 'quiet')}</div>`;
 }
 
 $('#panel-content').addEventListener('click', event => {
@@ -74,6 +85,19 @@ $('#panel-content').addEventListener('click', event => {
   if (action === 'show-chart') openPanel('chart');
   if (action === 'show-painting') openPanel('painting');
   if (action === 'show-stars') openPanel('stars');
+  if (action === 'cycle-symbol') {
+    const slot = Number(event.target.closest('[data-slot]').dataset.slot);
+    symbolChoices[slot] = (symbolChoices[slot] + 1) % constellations.length;
+    drawPanel('stars');
+    $(`[data-slot="${slot}"]`).focus();
+    say({ message: `第 ${slot+1} 格已選擇${constellations[symbolChoices[slot]].name} ${constellations[symbolChoices[slot]].symbol}。` });
+  }
+  if (action === 'solve-stars') {
+    const result = game.act('solve_stars', symbolChoices.map(i => constellations[i].symbol));
+    say(result);
+    if (result.ok) { render(); drawPanel('painting', true); }
+  }
+  if (action === 'take-crystal') { say(game.act('take_crystal')); render(); drawCompartment(false); }
 });
 $('#panel-content').addEventListener('submit', event => {
   if (event.target.id !== 'code-form') return;
@@ -93,6 +117,7 @@ function restart() {
   $('#restart-confirm').close();
   $('#investigation').close();
   game.restart();
+  symbolChoices = [0, 0, 0];
   render();
   $('#intro').classList.remove('leaving');
   $('#intro').showModal();

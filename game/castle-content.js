@@ -44,20 +44,31 @@ export const castleContent = {
     { id: 'study', title: '魔法師書房', hotspots: objects.map(([id, label, rect]) => ({ id, label, rect, interactionId: `inspect_${id}` })) },
     { id: 'details', title: '物件調查', hotspots: [
       { id: 'box', label: '四位密碼箱', rect: [35, 35, 30, 30], interactionId: 'solve_box' },
-      { id: 'lens_pickup', label: '魔法透鏡', rect: [10, 10, 20, 20], interactionId: 'take_lens' }
+      { id: 'lens_pickup', label: '魔法透鏡', rect: [10, 10, 20, 20], interactionId: 'take_lens' },
+      { id: 'symbol_lock', label: '三格星座機關', rect: [24, 40, 53, 29], interactionId: 'solve_stars' },
+      { id: 'crystal_pickup', label: '日月雙色水晶', rect: [37, 37, 16, 30], interactionId: 'take_crystal' }
     ] }
   ],
-  items: [{ id: 'lens', name: '魔法透鏡', description: '黃銅材質的單眼鏡片，長度約 12 公分。能顯現一般視角看不到的連線。', consumable: false }],
+  items: [
+    { id: 'lens', name: '魔法透鏡', description: '黃銅材質的單眼鏡片，長度約 12 公分。能顯現一般視角看不到的連線。', consumable: false },
+    { id: 'crystal', name: '日月雙色水晶', description: '左半部為金色、右半部為銀色的水晶，可放入大門中央的插槽。', consumable: true }
+  ],
   clues: objects.map(([id,,, text]) => ({ id: `clue_${id}`, hotspotId: id, text })),
   puzzles: [{
     id: 'box_code', clueIds: ['clue_book', 'clue_trash'], targetHotspotId: 'box', answer: '1976', solvedFlag: 'box_open',
     solution: '藏頭詩「樂色桶內」以諧音指向垃圾桶內；魔法書封面右下角的 1976 可直接開箱，箱內可取魔法透鏡。',
     onSolved: [{ type: 'setFlag', flag: 'box_open', value: true }]
+  }, {
+    id: 'star_symbols', answerType: 'symbols', clueIds: ['clue_painting', 'clue_chart'], targetHotspotId: 'symbol_lock', answer: '♌♋♏', solvedFlag: 'painting_open',
+    solution: '用透鏡查看油畫；將夜空、長袍、手稿的連線與十二宮格比對，分別為獅子、巨蟹、天蠍；三符號各一次，不限順序。解開後油畫右移，暗格水晶自動轉亮並可拾取。',
+    onSolved: [{ type: 'setFlag', flag: 'painting_open', value: true }]
   }],
   interactions: [
     ...objects.map(([id,,, text]) => ({ id: `inspect_${id}`, kind: 'inspect', clueId: `clue_${id}`, feedback: { success: text } })),
     { id: 'solve_box', kind: 'enterCode', puzzleId: 'box_code', feedback: { success: '密碼箱打開了。箱內有一片黃銅透鏡。', failure: '密碼不對，請輸入四位半形數字。可以重新嘗試。', repeated: '密碼箱已經打開。' } },
-    { id: 'take_lens', kind: 'take', itemId: 'lens', onceFlag: 'lens_taken', requiresFlags: ['box_open'], feedback: { success: '你取得了魔法透鏡，可在道具欄查看。', failure: '先解開密碼箱，才能取得透鏡。', repeated: '透鏡已經取走了。' } }
+    { id: 'take_lens', kind: 'take', itemId: 'lens', onceFlag: 'lens_taken', requiresFlags: ['box_open'], feedback: { success: '你取得了魔法透鏡，可在道具欄查看。', failure: '先解開密碼箱，才能取得透鏡。', repeated: '透鏡已經取走了。' } },
+    { id: 'solve_stars', kind: 'enterSymbols', puzzleId: 'star_symbols', requiresFlags: ['lens_taken', 'lens_observed'], feedback: { success: '喀嚓，油畫下的機關解開了。', failure: '機關沒有反應。請用透鏡調查油畫，再比對三個不同的星座符號。', repeated: '油畫暗格已經打開。' } },
+    { id: 'take_crystal', kind: 'take', itemId: 'crystal', onceFlag: 'crystal_taken', requiresFlags: ['painting_open'], feedback: { success: '你取得了日月雙色水晶。', failure: '需要先解開油畫機關。', repeated: '暗格的水晶已經取走了。' } }
   ],
-  initialState: { viewId: 'study', inventory: [], flags: { started: false, escaped: false, box_open: false, lens_taken: false, lens_active: false } }
+  initialState: { viewId: 'study', inventory: [], flags: { started: false, escaped: false, box_open: false, lens_taken: false, lens_active: false, lens_observed: false, painting_open: false, crystal_taken: false } }
 };
