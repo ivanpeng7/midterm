@@ -23,6 +23,7 @@ h1 { font-size: clamp(22px, 2.4vw, 32px); letter-spacing: .1em; margin: 0; color
 .hotspot.stars { background: #17221a; border-color: #ad8d4c; }
 .hotspot.stars span { position: static; display: block; transform: none; background: none; border: 0; padding: 0; font-size: clamp(9px, 1vw, 13px); }
 .bottom-bar { display: grid; grid-template-columns: minmax(260px, 1fr) 1fr; gap: 32px; padding: 22px 0 16px; }
+.mobile-objects { display: none; }
 .inventory-section h2 { font: 14px 'Microsoft JhengHei', sans-serif; letter-spacing: .16em; color: var(--gold); margin: 0 0 10px; }
 #inventory { display: flex; flex-wrap: wrap; gap: 12px; min-height: 44px; align-items: center; }
 #inventory p { color: var(--muted); font-size: 14px; margin: 0; }
@@ -105,4 +106,33 @@ dialog::backdrop { background: #020d0bdb; backdrop-filter: blur(4px); }
 #restart-confirm { max-width: 470px; line-height: 1.8; }
 @keyframes fade-out { to { opacity: 0; } }
 @media (max-width: 640px) { .game-shell { padding: 18px 12px; } .masthead { gap: 10px; } h1 span { display: block; font-size: 18px; margin-top: 6px; } .masthead p { font-size: 12px; letter-spacing: 0; } .masthead button { padding: .5rem; font-size: 13px; } .bottom-bar { grid-template-columns: 1fr; gap: 16px; } #message { padding-left: 12px; } dialog { padding: 16px; } .letter { padding: 115px 11% 38px; } .letter h2 { font-size: 20px; } .letter p { font-size: 16px; } .panel-heading h2 { font-size: 20px; } .hotspot span { padding: 2px 3px; } }
+@media (max-width: 640px) {
+  .mobile-objects:not([hidden]) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+  .mobile-objects button { padding: 8px 2px; font-size: 13px; min-height: 44px; }
+  .hotspot { pointer-events: none; }
+  .letter { padding-left: 17%; padding-right: 17%; }
+  .book-pages { aspect-ratio: auto; background: #e5c68c; border: 6px double #8a6b33; border-radius: 6px; }
+  .book-pages > img { display: none; }
+  .book-pages .writing { position: static; width: auto; font-size: 18px; padding: 24px; }
+  .writing.hint { padding-top: 0; }
+  .writing h3 { font-size: 16px; }
+  .chart-art { aspect-ratio: auto; overflow: visible; }
+  .chart-art > img { display: none; }
+  .chart-grid { position: static; width: 100%; height: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: none; gap: 10px; }
+  .chart-grid figure { min-height: 155px; }
+  .chart-grid canvas { height: 116px; }
+  .chart-grid figcaption { font-size: 15px; gap: 6px; }
+  .chart-grid b { font-size: 23px; }
+  .lockbox-art { overflow: visible; margin-bottom: 148px; }
+  .code-label { left: 0; top: calc(100% + 14px); width: 100%; font-size: 16px; }
+  .code-input { left: 10%; top: calc(100% + 42px); width: 80%; height: 48px; font-size: 28px; }
+  .box-unlock { left: 10%; top: calc(100% + 102px); width: 80%; height: 44px; font-size: 16px; }
+  .symbol-choice { min-height: 44px; }
+  .direction-control { min-height: 44px; }
+  .painting-art.lens-active { aspect-ratio: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .painting-art.lens-active > img { grid-column: 1 / -1; aspect-ratio: 1376 / 737; }
+  .tracing { position: static; width: auto; height: 110px; }
+  .tracing figcaption { font-size: 13px; }
+  .tracing canvas { height: 80px; }
+}
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }

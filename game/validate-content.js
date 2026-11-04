@@ -31,7 +31,7 @@ export function validateGameContent(content) {
     else declared.set(value, { path, type });
   };
   const reference = (value, path, type) => {
-    if (!isText(value)) return;
+    if (!isText(value)) { fail(path, '引用必須是非空文字'); return; }
     if (declared.get(value)?.type !== type) fail(path, `找不到${type} ${value}`);
   };
 

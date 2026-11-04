@@ -8,7 +8,8 @@ const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=
 const server = createServer(async (request, response) => {
   try {
     const pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
-    const target = resolve(root, `.${pathname === '/' ? '/game/index.html' : pathname}`);
+    if (pathname === '/' || pathname === '/game/') { response.writeHead(302, { Location: '/game/index.html' }); response.end(); return; }
+    const target = resolve(root, `.${pathname}`);
     if (!target.startsWith(root.endsWith(sep) ? root : root + sep)) { response.writeHead(403); response.end(); return; }
     const data = await readFile(target);
     response.writeHead(200, { 'Content-Type': types[extname(target)] ?? 'application/octet-stream', 'Cache-Control': 'no-store' });

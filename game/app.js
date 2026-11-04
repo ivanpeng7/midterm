@@ -7,6 +7,7 @@ const src = key => `../${assets[key]}`;
 let game;
 let lastFocus;
 let symbolChoices = [0, 0, 0];
+let round = 0;
 const say = result => { $('#message').textContent = result.message; $('#panel-message').textContent = result.message; };
 const image = (key, alt) => `<div class="art"><img src="${src(key)}" alt="${alt}"></div>`;
 
@@ -16,6 +17,7 @@ function render() {
   if ($('#room-image').getAttribute('src') !== roomSrc) $('#room-image').src = roomSrc;
   $('#ending').hidden = !state.flags.escaped;
   $('#hotspots').hidden = state.flags.escaped;
+  $('#mobile-objects').hidden = state.flags.escaped;
   $('#inventory').replaceChildren();
   if (!state.inventory.length) $('#inventory').innerHTML = '<p>尚未取得道具</p>';
   for (const id of state.inventory) {
@@ -100,7 +102,20 @@ $('#panel-content').addEventListener('click', event => {
   }
   if (action === 'solve-door') {
     const result = game.act('solve_door'); say(result);
-    if (result.ok) { closePanel(); render(); $('#scene').classList.add('escaped'); $('#ending h2').setAttribute('tabindex', '-1'); $('#ending h2').focus(); }
+    if (result.ok) {
+      closePanel(); render(); $('#ending').hidden = true;
+      const completedRound = round;
+      say({ message: '結界正在消散……' });
+      $('#room-image').decode().then(() => {
+        if (round !== completedRound || !game.state.flags.escaped) return;
+        $('#ending').hidden = false;
+        $('#scene').classList.add('escaped');
+        $('#ending h2').setAttribute('tabindex', '-1'); $('#ending h2').focus();
+        say(result);
+      }).catch(() => {
+        if (round === completedRound) say({ message: '開門圖片載入失敗，請按重新開始後再試。' });
+      });
+    }
   }
   if (action === 'cycle-symbol') {
     const slot = Number(event.target.closest('[data-slot]').dataset.slot);
@@ -131,6 +146,7 @@ function closePanel() {
 }
 
 function restart() {
+  round++;
   $('#restart-confirm').close();
   $('#investigation').close();
   game.restart();
@@ -156,11 +172,24 @@ try {
     const label = document.createElement('span'); label.textContent = spot.label; button.append(label);
     button.addEventListener('click', () => openPanel(spot.id));
     $('#hotspots').append(button);
+    const entry = document.createElement('button');
+    entry.className = 'quiet'; entry.textContent = spot.label;
+    entry.setAttribute('aria-label', `調查${spot.label}`);
+    entry.addEventListener('click', () => openPanel(spot.id));
+    $('#mobile-objects').append(entry);
   }
+  const mobileScreen = window.matchMedia('(max-width: 640px)');
+  const updateSceneAccess = () => {
+    for (const button of document.querySelectorAll('.hotspot')) {
+      button.setAttribute('aria-hidden', String(mobileScreen.matches));
+      button.tabIndex = mobileScreen.matches ? -1 : 0;
+    }
+  };
+  mobileScreen.addEventListener('change', updateSceneAccess); updateSceneAccess();
   $('#start').addEventListener('click', () => {
     $('#start').disabled = true;
     $('#intro').classList.add('leaving');
-    setTimeout(() => { $('#intro').close(); $('#start').disabled = false; say(game.start()); render(); $('.hotspot').focus(); }, 250);
+    setTimeout(() => { $('#intro').close(); $('#start').disabled = false; say(game.start()); render(); $(mobileScreen.matches ? '#mobile-objects button' : '.hotspot').focus(); }, 250);
   });
   $('#intro').addEventListener('cancel', event => event.preventDefault());
   $('#close').addEventListener('click', closePanel);
