@@ -12,7 +12,7 @@
   <main class="game-shell">
     <header class="masthead">
       <div><h1>禁忌實驗室<span>：古堡逃脫</span></h1><p>魔法師書房 · 點擊物件，尋找離開的方法</p></div>
-      <button id="restart" class="quiet">重新開始</button>
+      <div class="header-actions"><button class="quiet" data-sound-toggle aria-label="靜音" aria-pressed="false">聲音：開</button><button id="restart" class="quiet">重新開始</button></div>
     </header>
     <div class="scene-area">
     <section id="scene" class="scene" aria-label="魔法師書房">
@@ -32,7 +32,7 @@
     <div class="letter"><h2 id="intro-title">魔法師留下的信</h2><div id="letter-text"></div><button id="start">明白，開始逃脫！</button></div>
   </dialog>
   <dialog id="investigation" aria-labelledby="panel-title">
-    <header class="panel-heading"><h2 id="panel-title"></h2><button id="close" class="quiet" aria-label="關閉調查">關閉 ×</button></header>
+    <header class="panel-heading"><h2 id="panel-title"></h2><div class="header-actions"><button class="quiet" data-sound-toggle aria-label="靜音" aria-pressed="false">聲音：開</button><button id="close" class="quiet" aria-label="關閉調查">關閉 ×</button></div></header>
     <div id="panel-content"></div>
     <p id="panel-message" role="status" aria-live="polite"></p>
   </dialog>
