@@ -49,6 +49,17 @@ async function runFlow(width, height, errors, entryUrl = url) {
     await click('明白，開始逃脫！');
     await page.locator('#intro').waitFor({ state: 'hidden' });
     assert.equal(await page.locator('#inventory').innerText(), '尚未取得道具');
+    assert.equal((await page.locator('#hotspots').innerText()).trim(), '', 'U-04：場景物件上不顯示名稱文字');
+    const objectNames = await page.locator('#hotspots button').evaluateAll(buttons => buttons.map(button => button.getAttribute('aria-label')));
+    assert.equal(objectNames.length, 6);
+    check(objectNames.every(name => name?.startsWith('調查')), '移除可見名稱後，六個物件仍有輔助辨識名稱');
+    if (width > 640) {
+      await page.locator('.hotspot.book').hover();
+      assert.equal((await page.locator('#hotspots').innerText()).trim(), '', '滑鼠移入也不顯示物件名稱');
+      await page.locator('.hotspot.book').focus();
+      assert.equal((await page.locator('#hotspots').innerText()).trim(), '', '鍵盤選取也不顯示物件名稱');
+      await page.mouse.move(0, 0);
+    }
     await shot('room');
     if (errors) {
       await click('調查深夜觀星者'); await click('使用魔法透鏡');
