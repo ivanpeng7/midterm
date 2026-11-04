@@ -154,7 +154,10 @@ async function runFlow(width, height, errors, entryUrl = url) {
     await page.getByRole('textbox', { name: '四位密碼' }).fill(errors ? ' 1976 ' : '1976'); await shot('code'); await click('開鎖');
     await click('取得魔法透鏡'); await close();
     assert.equal(await page.getByRole('button', { name: '查看魔法透鏡', exact: true }).count(), 1);
-    await click('查看魔法透鏡'); check((await panel().textContent()).includes('12 公分'), '透鏡描述'); await close();
+    await click('查看魔法透鏡'); check((await panel().textContent()).includes('12 公分'), '透鏡描述');
+    await shot('lens-description');
+    assert.equal(await page.locator('#investigation').getByText('黃銅材質的單眼鏡片，長度約 12 公分。能顯現一般視角看不到的連線。', { exact: true }).count(), 1, 'U-10：透鏡說明只顯示一次');
+    await close();
     await click('調查垃圾桶'); await click('調查桶內密碼箱'); check((await panel().innerText()).includes('透鏡已取走'), '透鏡不能重取'); await close();
     await click('調查深夜觀星者'); assert.equal(await panel().locator('canvas').count(), 0);
     await click('使用魔法透鏡'); assert.equal(await panel().locator('canvas').count(), 3); await loaded(); await shot('lens');
@@ -181,7 +184,10 @@ async function runFlow(width, height, errors, entryUrl = url) {
     await loaded(); await shot('crystal'); await page.getByRole('button', { name: '取得日月雙色水晶', exact: true }).dblclick();
     assert.equal(await panel().locator('[data-action="take-crystal"]').count(),0); await close();
     assert.equal(await page.getByRole('button', { name: '查看日月雙色水晶', exact: true }).count(),1);
-    await click('查看日月雙色水晶'); check((await panel().textContent()).includes('左半部為金色、右半部為銀色'), '水晶描述'); await close();
+    await click('查看日月雙色水晶'); check((await panel().textContent()).includes('左半部為金色、右半部為銀色'), '水晶描述');
+    await shot('crystal-description');
+    assert.equal(await page.locator('#investigation').getByText('左半部為金色、右半部為銀色的水晶，可放入大門中央的插槽。', { exact: true }).count(), 1, 'U-10：水晶說明只顯示一次');
+    await close();
     await click('調查魔法書'); await click('翻開魔法書'); check((await panel().textContent()).includes('日守天頂'), '取得水晶後仍能重讀'); await close();
     await click('調查結界大門');
     assert.equal(await panel().locator('[data-action="sun"]').getAttribute('aria-disabled'), 'true');
