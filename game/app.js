@@ -27,6 +27,7 @@ let symbolChoices = [0, 0, 0];
 let round = 0;
 const say = result => { $('#message').textContent = result.message; $('#panel-message').textContent = result.message; };
 const image = (key, alt) => `<div class="art"><img src="${src(key)}" alt="${alt}"></div>`;
+const bookCoverMessage = '魔法書的封面。翻開書本，查看魔法師留下的筆記。';
 
 // 每張調查圖片使用剩餘的顯示空間，按鈕與文字先保留原本所需高度。
 function prepareArtwork() {
@@ -61,7 +62,8 @@ function render() {
 
 function openPanel(id) {
   const result = game.open(id);
-  say(result);
+  // 調查封面時不把引擎的完整書內線索送進兩個訊息欄。
+  say(id === 'book' && result.ok ? { ...result, message: bookCoverMessage } : result);
   if (!result.ok) return;
   if (!$('#investigation').open) lastFocus = document.activeElement;
   const spot = castleContent.views.flatMap(view => view.hotspots).find(spot => spot.id === id);
@@ -112,9 +114,9 @@ $('#panel-content').addEventListener('click', event => {
   if (action === 'read-book') {
     sound.play('paper');
     $('#panel-content').innerHTML = `<div class="art book-pages"><img src="${src('bookOpen')}" alt="魔法書展開的羊皮紙內頁"><div class="writing poem"><h3>魔法師的筆記</h3>${poem.map(line => `<p><strong>${line[0]}</strong>${line.slice(1)}</p>`).join('')}</div><div class="writing hint"><h3>留給學徒</h3><p>${directionHint}</p><p>封面右下角<br><b>1976</b></p></div></div><div class="actions">${actionButton('book-cover', '查看封面')}</div>`;
-    $('#panel-message').textContent = '筆記可以隨時回來重讀。';
+    say({ message: '筆記可以隨時回來重讀。' });
   }
-  if (action === 'book-cover') { sound.play('paper'); drawPanel('book'); }
+  if (action === 'book-cover') { sound.play('paper'); say({ message: bookCoverMessage }); drawPanel('book'); }
   if (action === 'open-box') openPanel('box');
   if (action === 'take-lens') { say(audible('take_lens', game.act('take_lens'))); render(); drawPanel('box'); }
   if (action === 'toggle-lens') { say(audible('toggle-lens', game.toggleLens())); drawPanel('painting'); }
