@@ -53,7 +53,16 @@ async function runFlow(width, height, errors, entryUrl = url) {
     const objectNames = await page.locator('#hotspots button').evaluateAll(buttons => buttons.map(button => button.getAttribute('aria-label')));
     assert.equal(objectNames.length, 6);
     check(objectNames.every(name => name?.startsWith('調查')), '移除可見名稱後，六個物件仍有輔助辨識名稱');
+    const noObjectFrames = () => page.locator('#hotspots button').evaluateAll(buttons => buttons.every(button => {
+      const style = getComputedStyle(button);
+      return ['Top','Right','Bottom','Left'].every(side => style[`border${side}Width`] === '0px') && style.boxShadow === 'none';
+    }));
+    check(await noObjectFrames(), 'U-06：六個場景物件都不顯示額外方框或黃色框影');
     if (width > 640) {
+      for (const object of ['book','trash','painting','chart','stars','door']) {
+        await page.locator(`.hotspot.${object}`).hover();
+        check(await noObjectFrames(), `滑鼠移入 ${object} 也不顯示額外方框或黃色框影`);
+      }
       await page.locator('.hotspot.book').hover();
       assert.equal((await page.locator('#hotspots').innerText()).trim(), '', '滑鼠移入也不顯示物件名稱');
       await page.locator('.hotspot.book').focus();
