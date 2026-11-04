@@ -34,6 +34,25 @@
     <p id="panel-message" role="status" aria-live="polite"></p>
   </dialog>
   <dialog id="restart-confirm" aria-labelledby="restart-title"><h2 id="restart-title">要重新開始嗎？</h2><p>這一局的道具與解謎進度會清空。</p><div class="actions"><button id="confirm-restart">重新開始新遊戲</button><button id="cancel-restart" class="quiet">繼續這一局</button></div></dialog>
-  <script type="module" src="./app.js"></script>
+  <script type="module">
+    // 本機網址保留模組載入；直接開檔時改走下方的一般程式。
+    if (location.protocol !== 'file:') {
+      import('./app.js').catch(error => {
+        document.querySelector('#message').textContent = '遊戲程式載入失敗，請確認遊戲檔案完整後重新載入。';
+        console.error(error);
+      });
+    }
+  </script>
+  <script>
+    // Chrome 不允許 file: 頁面匯入外部模組，因此使用同一份原始碼產生的版本。
+    if (location.protocol === 'file:') {
+      const runtime = document.createElement('script');
+      runtime.src = './browser.js';
+      runtime.onerror = () => {
+        document.querySelector('#message').textContent = '遊戲程式載入失敗，請確認 browser.js 與 index.html 放在同一個資料夾。';
+      };
+      document.body.append(runtime);
+    }
+  </script>
 </body>
 </html>
