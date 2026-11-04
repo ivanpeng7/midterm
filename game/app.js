@@ -169,7 +169,6 @@ try {
     button.setAttribute('aria-label', `調查${spot.label}`);
     const [x,y,w,h] = spot.rect;
     Object.assign(button.style, { left: `${x}%`, top: `${y}%`, width: `${w}%`, height: `${h}%` });
-    const label = document.createElement('span'); label.textContent = spot.label; button.append(label);
     button.addEventListener('click', () => openPanel(spot.id));
     $('#hotspots').append(button);
     const entry = document.createElement('button');

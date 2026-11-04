@@ -17,11 +17,10 @@ h1 { font-size: clamp(22px, 2.4vw, 32px); letter-spacing: .1em; margin: 0; color
 #room-image { width: 100%; height: 100%; display: block; }
 .hotspot { position: absolute; background: transparent; border: 1px solid #e5ce9359; border-radius: 3px; padding: 0; min-height: 0; color: white; }
 .hotspot:hover, .hotspot:focus-visible { background: #e5ce931a; border-color: #f6d48a; }
-.hotspot span { position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); white-space: nowrap; padding: 4px 9px; background: #0b1715e8; color: #f4e6c5; border: 1px solid #a38c5e; font-size: clamp(10px, 1.1vw, 14px); }
 .hotspot.chart { background: #182d22e8; border: 3px double #ae8a48; display: grid; place-content: center; }
 .hotspot.chart::before { content: '✧　✦\A　✧\A✦　✧'; white-space: pre; color: var(--gold); font-size: clamp(12px, 2vw, 24px); }
 .hotspot.stars { background: #17221a; border-color: #ad8d4c; }
-.hotspot.stars span { position: static; display: block; transform: none; background: none; border: 0; padding: 0; font-size: clamp(9px, 1vw, 13px); }
+.hotspot.stars::before { content: '✧　✧　✧'; color: var(--gold); font-size: clamp(9px, 1vw, 13px); }
 .bottom-bar { display: grid; grid-template-columns: minmax(260px, 1fr) 1fr; gap: 32px; padding: 22px 0 16px; }
 .mobile-objects { display: none; }
 .inventory-section h2 { font: 14px 'Microsoft JhengHei', sans-serif; letter-spacing: .16em; color: var(--gold); margin: 0 0 10px; }
@@ -105,7 +104,7 @@ dialog::backdrop { background: #020d0bdb; backdrop-filter: blur(4px); }
 .ending h2 { font-size: clamp(30px, 4vw, 56px); color: #ffe3a1; margin: 0; text-shadow: 0 3px 12px #000; }
 #restart-confirm { max-width: 470px; line-height: 1.8; }
 @keyframes fade-out { to { opacity: 0; } }
-@media (max-width: 640px) { .game-shell { padding: 18px 12px; } .masthead { gap: 10px; } h1 span { display: block; font-size: 18px; margin-top: 6px; } .masthead p { font-size: 12px; letter-spacing: 0; } .masthead button { padding: .5rem; font-size: 13px; } .bottom-bar { grid-template-columns: 1fr; gap: 16px; } #message { padding-left: 12px; } dialog { padding: 16px; } .letter { padding: 115px 11% 38px; } .letter h2 { font-size: 20px; } .letter p { font-size: 16px; } .panel-heading h2 { font-size: 20px; } .hotspot span { padding: 2px 3px; } }
+@media (max-width: 640px) { .game-shell { padding: 18px 12px; } .masthead { gap: 10px; } h1 span { display: block; font-size: 18px; margin-top: 6px; } .masthead p { font-size: 12px; letter-spacing: 0; } .masthead button { padding: .5rem; font-size: 13px; } .bottom-bar { grid-template-columns: 1fr; gap: 16px; } #message { padding-left: 12px; } dialog { padding: 16px; } .letter { padding: 115px 11% 38px; } .letter h2 { font-size: 20px; } .letter p { font-size: 16px; } .panel-heading h2 { font-size: 20px; } }
 @media (max-width: 640px) {
   .mobile-objects:not([hidden]) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
   .mobile-objects button { padding: 8px 2px; font-size: 13px; min-height: 44px; }
