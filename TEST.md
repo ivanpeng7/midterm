@@ -254,3 +254,11 @@ commit／含未提交修改的檔案：
 以既有 Playwright 操作 Chrome `156.0.8078.80`；Browser 技能未提供。頁名、網址、實際內容與操作正常，錯誤／警告清單為空，截圖另經目視檢查。其他瀏覽器與真實手機尚未測試。`VERIFY.md` 未修改。
 
 證據：`C:/Users/ivanp/.codex/visualizations/2026/11/04/01a1a682-72c8-7190-b198-935b1499c34d/no-object-frames/` 下的 `node-tests.txt`、`browser-results.json`、流程截圖與 `room-no-frames.png`。
+
+## 14. 密碼框文字與提示圈（2026-11-04）
+
+先行測試 `28fef5a` 在 U-07 檢查到可見的「四位密碼」而失敗；提交後移除標籤，保留輸入框輔助名稱，將原字型圓圈改為四個依輸入框寬高等比例繪製的 CSS 圓圈。輸入後圓圈隱藏，清空後恢復，桌面與手機皆完整顯示。
+
+版本為 `28fef5a` 加 `game/app.js`、`game/style.css`、`game/browser.js` 的待提交修正。`node --test`：117 通過、0 失敗、0 略過；七組瀏覽器驗收通過，Chrome `156.0.8078.80` 的桌面／手機、直接開檔／本機網址均可完整通關。四個圓圈的尺寸一致、寬高差小於 1px、全部位於框內；原本錯密碼及正確開箱檢查仍通過。`VERIFY.md` 未修改。
+
+證據在原證據資料夾的 `code-field-fit/` 子資料夾：`node-tests.txt`、`browser-results.json`、各流程的 `*-empty-code.png` 與 `*-code.png`。

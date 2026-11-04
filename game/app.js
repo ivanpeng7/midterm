@@ -52,7 +52,7 @@ function drawPanel(id, reveal = false) {
     if (game.state.flags.box_open) {
       content.innerHTML = `${image('lens', '箱內的黃銅魔法透鏡')}<div class="actions">${actionButton('take-lens', game.state.flags.lens_taken ? '透鏡已取走' : '取得魔法透鏡')}</div>`;
       if (game.state.flags.lens_taken) content.innerHTML = '<div class="empty-box">密碼箱已開啟，透鏡已取走。</div>';
-    } else content.innerHTML = `<form id="code-form"><div class="art lockbox-art"><img src="${src('lockbox')}" alt="哥德式密碼箱"><div class="code-mask"></div><label class="code-label" for="code">四位密碼</label><input id="code" name="code" class="code-input" type="text" inputmode="numeric" maxlength="8" autocomplete="off" aria-label="四位密碼" placeholder="○ ○ ○ ○"><button class="box-unlock" type="submit">開鎖</button></div></form>`;
+    } else content.innerHTML = `<form id="code-form"><div class="art lockbox-art"><img src="${src('lockbox')}" alt="哥德式密碼箱"><div class="code-entry"><input id="code" name="code" class="code-input" type="text" inputmode="numeric" maxlength="8" autocomplete="off" aria-label="四位密碼" placeholder=" "><div class="code-placeholder" aria-hidden="true"><span></span><span></span><span></span><span></span></div></div><button class="box-unlock" type="submit">開鎖</button></div></form>`;
   } else if (id === 'painting') {
     if (game.state.flags.painting_open) { drawCompartment(reveal); return; }
     const enabled = game.state.flags.lens_active;
