@@ -1,9 +1,26 @@
 import { castleContent, assets, letter, poem, directionHint } from './castle-content.js';
 import { createGame } from './engine.js';
 import { constellations, drawGraph } from './constellations.js';
+import { createGameAudio } from './audio.js';
 
 const $ = selector => document.querySelector(selector);
 const src = key => `../${assets[key]}`;
+const sound = createGameAudio();
+const audible = (action, result) => { sound.handle(action, result); return result; };
+document.addEventListener('visibilitychange', () => sound.setVisible(!document.hidden));
+window.addEventListener('pagehide', () => sound.setVisible(false));
+window.addEventListener('pageshow', () => sound.setVisible(!document.hidden));
+document.addEventListener('click', event => {
+  const button = event.target.closest('button');
+  if (!button || button.disabled) return;
+  if (button.matches('[data-sound-toggle]')) {
+    sound.setMuted(!sound.muted);
+    for (const control of document.querySelectorAll('[data-sound-toggle]')) {
+      control.textContent = sound.muted ? '聲音：關' : '聲音：開';
+      control.setAttribute('aria-pressed', String(sound.muted));
+    }
+  } else if (button.id !== 'start' && !['read-book','book-cover','cycle-symbol','sun','moon','toggle-lens','insert-crystal','solve-stars','solve-door','take-lens','take-crystal'].includes(button.dataset.action)) sound.play('click');
+}, true);
 let game;
 let lastFocus;
 let symbolChoices = [0, 0, 0];
@@ -93,27 +110,28 @@ function drawCompartment(reveal) {
 $('#panel-content').addEventListener('click', event => {
   const action = event.target.closest('[data-action]')?.dataset.action;
   if (action === 'read-book') {
+    sound.play('paper');
     $('#panel-content').innerHTML = `<div class="art book-pages"><img src="${src('bookOpen')}" alt="魔法書展開的羊皮紙內頁"><div class="writing poem"><h3>魔法師的筆記</h3>${poem.map(line => `<p><strong>${line[0]}</strong>${line.slice(1)}</p>`).join('')}</div><div class="writing hint"><h3>留給學徒</h3><p>${directionHint}</p><p>封面右下角<br><b>1976</b></p></div></div><div class="actions">${actionButton('book-cover', '查看封面')}</div>`;
     $('#panel-message').textContent = '筆記可以隨時回來重讀。';
   }
-  if (action === 'book-cover') drawPanel('book');
+  if (action === 'book-cover') { sound.play('paper'); drawPanel('book'); }
   if (action === 'open-box') openPanel('box');
-  if (action === 'take-lens') { say(game.act('take_lens')); render(); drawPanel('box'); }
-  if (action === 'toggle-lens') { say(game.toggleLens()); drawPanel('painting'); }
+  if (action === 'take-lens') { say(audible('take_lens', game.act('take_lens'))); render(); drawPanel('box'); }
+  if (action === 'toggle-lens') { say(audible('toggle-lens', game.toggleLens())); drawPanel('painting'); }
   if (action === 'show-chart') openPanel('chart');
   if (action === 'show-painting') openPanel('painting');
   if (action === 'show-stars') openPanel('stars');
   if (action === 'show-door') openPanel('door');
   if (action === 'show-book') openPanel('book');
-  if (action === 'insert-crystal') { say(game.act('insert_crystal', 'crystal')); render(); drawPanel('door'); }
+  if (action === 'insert-crystal') { say(audible('insert_crystal', game.act('insert_crystal', 'crystal'))); render(); drawPanel('door'); }
   if (action === 'sun' || action === 'moon') {
     const flags = game.state.flags;
     const direction = action === 'sun' ? (flags.sun_up ? 'down' : 'up') : (flags.moon_right ? 'left' : 'right');
-    say(game.setDirection(action, direction)); drawPanel('door');
+    say(audible(action, game.setDirection(action, direction))); drawPanel('door');
     $(`[data-action="${action}"]`).focus();
   }
   if (action === 'solve-door') {
-    const result = game.act('solve_door'); say(result);
+    const result = audible('solve_door', game.act('solve_door')); say(result);
     if (result.ok) {
       closePanel(); render(); $('#ending').hidden = true;
       const completedRound = round;
@@ -130,6 +148,7 @@ $('#panel-content').addEventListener('click', event => {
     }
   }
   if (action === 'cycle-symbol') {
+    sound.play('symbol');
     const slot = Number(event.target.closest('[data-slot]').dataset.slot);
     symbolChoices[slot] = (symbolChoices[slot] + 1) % constellations.length;
     drawPanel('stars');
@@ -137,16 +156,17 @@ $('#panel-content').addEventListener('click', event => {
     say({ message: `第 ${slot+1} 格已選擇${constellations[symbolChoices[slot]].name} ${constellations[symbolChoices[slot]].symbol}。` });
   }
   if (action === 'solve-stars') {
-    const result = game.act('solve_stars', symbolChoices.map(i => constellations[i].symbol));
+    const result = audible('solve_stars', game.act('solve_stars', symbolChoices.map(i => constellations[i].symbol)));
     say(result);
     if (result.ok) { render(); drawPanel('painting', true); }
   }
-  if (action === 'take-crystal') { say(game.act('take_crystal')); render(); drawCompartment(false); }
+  if (action === 'take-crystal') { say(audible('take_crystal', game.act('take_crystal'))); render(); drawCompartment(false); }
 });
+$('#panel-content').addEventListener('input', event => { if (event.target.id === 'code') sound.play('dial'); });
 $('#panel-content').addEventListener('submit', event => {
   if (event.target.id !== 'code-form') return;
   event.preventDefault();
-  const result = game.act('solve_box', $('#code').value);
+  const result = audible('solve_box', game.act('solve_box', $('#code').value));
   say(result);
   if (result.ok) { render(); drawPanel('box'); }
 });
@@ -158,6 +178,7 @@ function closePanel() {
 }
 
 function restart() {
+  sound.reset();
   round++;
   $('#restart-confirm').close();
   $('#investigation').close();
@@ -198,6 +219,7 @@ try {
   };
   mobileScreen.addEventListener('change', updateSceneAccess); updateSceneAccess();
   $('#start').addEventListener('click', () => {
+    sound.start(); sound.play('click');
     $('#start').disabled = true;
     $('#intro').classList.add('leaving');
     setTimeout(() => { $('#intro').close(); $('#start').disabled = false; say(game.start()); render(); $(mobileScreen.matches ? '#mobile-objects button' : '.hotspot').focus(); }, 250);

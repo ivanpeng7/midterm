@@ -434,10 +434,115 @@ function createGame(content = castleContent) {
   };
 }
 
+// 來源：audio.js
+// 使用原始素材；只限制單次音效播放長度，不改動音檔。
+const audioTracks = {
+  music: { file: 'bgm_mystic_study.wav (1).wav', volume: .2, loop: true },
+  fire: { file: 'sfx_fireplace_crackle.wav.wav', volume: .08, loop: true },
+  click: { file: 'sfx_click_button.wav.mp3', volume: .25, maxSeconds: .4 },
+  paper: { file: 'sfx_paper_flip.wax.wav', volume: .35, maxSeconds: 1.2 },
+  dial: { file: 'sfx_lockbox_dial.wav.wav', volume: .35, maxSeconds: .5 },
+  boxOpen: { file: 'sfx_lockbox_open.wav.wav', volume: .4, maxSeconds: 2 },
+  pickup: { file: 'sfx_item_pickup.wav.wav', volume: .4, maxSeconds: 1 },
+  lens: { file: 'sfx_lens_toggle.wav.wav', volume: .35, maxSeconds: 1.4 },
+  symbol: { file: 'sfx_constellation_click.wav.flac', volume: .35, maxSeconds: .6 },
+  slide: { file: 'sfx_painting_slide.wav.wav', volume: .4, maxSeconds: 1.6 },
+  charge: { file: 'sfx_crystal_charge.wav.wav', volume: .4, maxSeconds: 2 },
+  insert: { file: 'sfx_crystal_insert.wav.mp3', volume: .45, maxSeconds: 1 },
+  toggle: { file: 'sfx_switch_toggle.wav.wav', volume: .35, maxSeconds: .6 },
+  error: { file: 'sfx_error_shake.wav.wav', volume: .3, maxSeconds: 1 },
+  barrier: { file: 'sfx_barrier_dispel.wav.wav', volume: .45, maxSeconds: 2.7 },
+  door: { file: 'sfx_door_open.wav.wav', volume: .4, maxSeconds: 3 }
+};
+
+function createGameAudio({ makeAudio = url => new Audio(url), schedule = setTimeout, cancel = clearTimeout } = {}) {
+  const players = new Map(), deadlines = new Map(), pending = new Set(), generations = new Map();
+  let unlocked = false, roomActive = false, muted = false, visible = true;
+  const available = () => unlocked && !muted && visible;
+  const later = (fn, delay) => {
+    const id = schedule(() => { pending.delete(id); fn(); }, delay);
+    pending.add(id); return id;
+  };
+  const stop = (key, rewind = true) => {
+    generations.set(key, (generations.get(key) ?? 0) + 1);
+    const id = deadlines.get(key);
+    if (id !== undefined) { cancel(id); pending.delete(id); deadlines.delete(key); }
+    try { const player = players.get(key); player?.pause(); if (player && rewind) player.currentTime = 0; } catch { /* 音訊狀態不可影響遊戲。 */ }
+  };
+  const silence = () => {
+    for (const id of pending) cancel(id);
+    pending.clear(); deadlines.clear();
+    for (const key of players.keys()) stop(key, !audioTracks[key].loop);
+  };
+  const getPlayer = key => {
+    if (!players.has(key)) {
+      const track = audioTracks[key];
+      const player = makeAudio(`../asset/${encodeURIComponent(track.file)}`);
+      player.loop = Boolean(track.loop); player.volume = track.volume; player.preload = 'none';
+      players.set(key, player);
+    }
+    return players.get(key);
+  };
+  const play = key => {
+    const track = audioTracks[key];
+    if (!available() || !track) return;
+    try {
+      const player = getPlayer(key);
+      if (track.loop && !player.paused) return;
+      if (!track.loop) stop(key);
+      const generation = generations.get(key);
+      // 等到實際開始發聲才計時，避免首次載入較慢時被提早截掉。
+      const limit = () => {
+        if (!track.loop && generation === generations.get(key) && available() && !player.paused) deadlines.set(key, later(() => stop(key), track.maxSeconds * 1000));
+      };
+      if (!track.loop) player.addEventListener?.('playing', limit, { once: true });
+      const started = player.play();
+      if (!player.addEventListener) limit();
+      started?.catch?.(() => {});
+    } catch { /* 裝置不支援、解碼或播放受限時，原操作仍可完成。 */ }
+  };
+  const resume = () => { if (roomActive && available()) { play('music'); play('fire'); } };
+  const start = () => { unlocked = true; roomActive = true; resume(); };
+  const reset = () => { silence(); for (const key of players.keys()) stop(key); unlocked = false; roomActive = false; };
+  return {
+    get muted() { return muted; },
+    start, play, reset,
+    setMuted(value) { muted = Boolean(value); if (muted) silence(); else resume(); },
+    setVisible(value) { visible = Boolean(value); if (!visible) silence(); else resume(); },
+    handle(action, result) {
+      if (!result?.ok) { play('error'); return; }
+      if (action === 'start') { start(); return; }
+      const cues = { solve_box: 'boxOpen', take_lens: 'pickup', take_crystal: 'pickup', 'toggle-lens': 'lens', insert_crystal: 'insert', sun: 'toggle', moon: 'toggle' };
+      if (cues[action]) play(cues[action]);
+      if (action === 'solve_stars' && available()) { play('slide'); later(() => play('charge'), 300); }
+      if (action === 'solve_door') {
+        silence(); roomActive = false;
+        if (available()) { play('barrier'); later(() => play('door'), 800); }
+      }
+    }
+  };
+}
+
 // 來源：app.js
 
 const $ = selector => document.querySelector(selector);
 const src = key => `../${assets[key]}`;
+const sound = createGameAudio();
+const audible = (action, result) => { sound.handle(action, result); return result; };
+document.addEventListener('visibilitychange', () => sound.setVisible(!document.hidden));
+window.addEventListener('pagehide', () => sound.setVisible(false));
+window.addEventListener('pageshow', () => sound.setVisible(!document.hidden));
+document.addEventListener('click', event => {
+  const button = event.target.closest('button');
+  if (!button || button.disabled) return;
+  if (button.matches('[data-sound-toggle]')) {
+    sound.setMuted(!sound.muted);
+    for (const control of document.querySelectorAll('[data-sound-toggle]')) {
+      control.textContent = sound.muted ? '聲音：關' : '聲音：開';
+      control.setAttribute('aria-pressed', String(sound.muted));
+    }
+  } else if (button.id !== 'start' && !['read-book','book-cover','cycle-symbol','sun','moon','toggle-lens','insert-crystal','solve-stars','solve-door','take-lens','take-crystal'].includes(button.dataset.action)) sound.play('click');
+}, true);
 let game;
 let lastFocus;
 let symbolChoices = [0, 0, 0];
@@ -527,27 +632,28 @@ function drawCompartment(reveal) {
 $('#panel-content').addEventListener('click', event => {
   const action = event.target.closest('[data-action]')?.dataset.action;
   if (action === 'read-book') {
+    sound.play('paper');
     $('#panel-content').innerHTML = `<div class="art book-pages"><img src="${src('bookOpen')}" alt="魔法書展開的羊皮紙內頁"><div class="writing poem"><h3>魔法師的筆記</h3>${poem.map(line => `<p><strong>${line[0]}</strong>${line.slice(1)}</p>`).join('')}</div><div class="writing hint"><h3>留給學徒</h3><p>${directionHint}</p><p>封面右下角<br><b>1976</b></p></div></div><div class="actions">${actionButton('book-cover', '查看封面')}</div>`;
     $('#panel-message').textContent = '筆記可以隨時回來重讀。';
   }
-  if (action === 'book-cover') drawPanel('book');
+  if (action === 'book-cover') { sound.play('paper'); drawPanel('book'); }
   if (action === 'open-box') openPanel('box');
-  if (action === 'take-lens') { say(game.act('take_lens')); render(); drawPanel('box'); }
-  if (action === 'toggle-lens') { say(game.toggleLens()); drawPanel('painting'); }
+  if (action === 'take-lens') { say(audible('take_lens', game.act('take_lens'))); render(); drawPanel('box'); }
+  if (action === 'toggle-lens') { say(audible('toggle-lens', game.toggleLens())); drawPanel('painting'); }
   if (action === 'show-chart') openPanel('chart');
   if (action === 'show-painting') openPanel('painting');
   if (action === 'show-stars') openPanel('stars');
   if (action === 'show-door') openPanel('door');
   if (action === 'show-book') openPanel('book');
-  if (action === 'insert-crystal') { say(game.act('insert_crystal', 'crystal')); render(); drawPanel('door'); }
+  if (action === 'insert-crystal') { say(audible('insert_crystal', game.act('insert_crystal', 'crystal'))); render(); drawPanel('door'); }
   if (action === 'sun' || action === 'moon') {
     const flags = game.state.flags;
     const direction = action === 'sun' ? (flags.sun_up ? 'down' : 'up') : (flags.moon_right ? 'left' : 'right');
-    say(game.setDirection(action, direction)); drawPanel('door');
+    say(audible(action, game.setDirection(action, direction))); drawPanel('door');
     $(`[data-action="${action}"]`).focus();
   }
   if (action === 'solve-door') {
-    const result = game.act('solve_door'); say(result);
+    const result = audible('solve_door', game.act('solve_door')); say(result);
     if (result.ok) {
       closePanel(); render(); $('#ending').hidden = true;
       const completedRound = round;
@@ -564,6 +670,7 @@ $('#panel-content').addEventListener('click', event => {
     }
   }
   if (action === 'cycle-symbol') {
+    sound.play('symbol');
     const slot = Number(event.target.closest('[data-slot]').dataset.slot);
     symbolChoices[slot] = (symbolChoices[slot] + 1) % constellations.length;
     drawPanel('stars');
@@ -571,16 +678,17 @@ $('#panel-content').addEventListener('click', event => {
     say({ message: `第 ${slot+1} 格已選擇${constellations[symbolChoices[slot]].name} ${constellations[symbolChoices[slot]].symbol}。` });
   }
   if (action === 'solve-stars') {
-    const result = game.act('solve_stars', symbolChoices.map(i => constellations[i].symbol));
+    const result = audible('solve_stars', game.act('solve_stars', symbolChoices.map(i => constellations[i].symbol)));
     say(result);
     if (result.ok) { render(); drawPanel('painting', true); }
   }
-  if (action === 'take-crystal') { say(game.act('take_crystal')); render(); drawCompartment(false); }
+  if (action === 'take-crystal') { say(audible('take_crystal', game.act('take_crystal'))); render(); drawCompartment(false); }
 });
+$('#panel-content').addEventListener('input', event => { if (event.target.id === 'code') sound.play('dial'); });
 $('#panel-content').addEventListener('submit', event => {
   if (event.target.id !== 'code-form') return;
   event.preventDefault();
-  const result = game.act('solve_box', $('#code').value);
+  const result = audible('solve_box', game.act('solve_box', $('#code').value));
   say(result);
   if (result.ok) { render(); drawPanel('box'); }
 });
@@ -592,6 +700,7 @@ function closePanel() {
 }
 
 function restart() {
+  sound.reset();
   round++;
   $('#restart-confirm').close();
   $('#investigation').close();
@@ -632,6 +741,7 @@ try {
   };
   mobileScreen.addEventListener('change', updateSceneAccess); updateSceneAccess();
   $('#start').addEventListener('click', () => {
+    sound.start(); sound.play('click');
     $('#start').disabled = true;
     $('#intro').classList.add('leaving');
     setTimeout(() => { $('#intro').close(); $('#start').disabled = false; say(game.start()); render(); $(mobileScreen.matches ? '#mobile-objects button' : '.hotspot').focus(); }, 250);

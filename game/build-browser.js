@@ -2,8 +2,8 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-// 只組合本專案的五個模組，順序即其相依順序；不安裝額外建置套件。
-const moduleFiles = ['constellations.js', 'castle-content.js', 'validate-content.js', 'engine.js', 'app.js'];
+// 依相依順序組合本專案模組，不安裝額外建置套件。
+const moduleFiles = ['constellations.js', 'castle-content.js', 'validate-content.js', 'engine.js', 'audio.js', 'app.js'];
 
 export async function createBrowserBundle() {
   const loaded = new Set();
