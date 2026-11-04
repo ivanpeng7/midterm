@@ -5,6 +5,7 @@ import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
+import { assets } from '../game/castle-content.js';
 
 const require = createRequire(import.meta.url);
 let playwright;
@@ -136,7 +137,57 @@ async function runFlow(width, height, errors) {
   finally { await page.close(); }
 }
 
+async function checkAssetsMotionAndLoadFailure() {
+  const page = await browser.newPage({ viewport: { width: 1366, height: 900 }, reducedMotion: 'no-preference' });
+  page.on('pageerror', error => report.errors.push(error.message));
+  page.on('console', message => { if (['error','warning'].includes(message.type())) report.errors.push(message.text()); });
+  const click = name => page.getByRole('button', { name, exact: true }).click();
+  try {
+    await page.goto('http://127.0.0.1:4173/');
+    assert.equal(page.url(), url, '根網址應轉到正式入口，避免相對路徑缺檔');
+    const sizes = await page.evaluate(async sources => Promise.all(sources.map(source => new Promise((resolve,reject) => {
+      const img = new Image(); img.onload = () => resolve([img.naturalWidth,img.naturalHeight]); img.onerror = () => reject(new Error(source)); img.src = `/${source}`;
+    }))), Object.values(assets));
+    assert.equal(sizes.length,16); check(sizes.every(([w,h]) => w > 0 && h > 0), '16 張素材全部可解碼');
+    await click('明白，開始逃脫！'); await page.locator('#intro').waitFor({state:'hidden'});
+    await page.keyboard.press('Enter'); check(await page.locator('#investigation').isVisible(), 'Enter 可調查焦點物件');
+    await page.keyboard.press('Escape'); check(!await page.locator('#investigation').isVisible(), 'Esc 可返回');
+    await click('調查垃圾桶'); await click('調查桶內密碼箱'); await page.getByRole('textbox',{name:'四位密碼'}).fill('1976'); await click('開鎖'); await click('取得魔法透鏡'); await click('關閉調查');
+    await page.setViewportSize({width:800,height:700}); await click('調查魔法書'); await click('翻開魔法書');
+    check((await page.locator('#panel-content').textContent()).includes('內尋方知鎖鎖牽。'), '縮放後書本可讀與可點'); await click('關閉調查');
+    check(await page.getByRole('button',{name:'查看魔法透鏡',exact:true}).isVisible(), '縮放後道具保留');
+    await page.setViewportSize({width:1366,height:900});
+    await click('調查深夜觀星者'); await click('使用魔法透鏡'); await click('操作星座機關');
+    for (const [slot,times] of [[0,4],[1,3],[2,7]]) for (let i=0;i<times;i++) await page.locator(`[data-slot="${slot}"]`).click();
+    await click('確認星座符號');
+    const initial = await page.locator('.crystal-lit').evaluate(node => ({opacity: Number(getComputedStyle(node).opacity),animation:getComputedStyle(node).animationName}));
+    assert.equal(initial.animation,'light-up'); check(initial.opacity < 1, '一般模式水晶不是立即全亮');
+    const bounds = await page.locator('.crystal-sprite').evaluateAll(nodes => nodes.map(node => { const r=node.getBoundingClientRect(); return [r.x,r.y,r.width,r.height]; }));
+    assert.deepEqual(bounds[0],bounds[1], '暗亮兩狀態位置與大小一致');
+    const darkPath = join(output,'motion-opening.png'); await page.screenshot({path:darkPath,fullPage:true}); report.screenshots.push(darkPath);
+    await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('.crystal-lit')).opacity) === 1);
+    const transform = await page.locator('.sliding-painting').evaluate(node => new DOMMatrix(getComputedStyle(node).transform).m41);
+    check(transform > 900, '油畫確實向右滑出');
+    const litPath = join(output,'motion-crystal-lit.png'); await page.screenshot({path:litPath,fullPage:true}); report.screenshots.push(litPath);
+    await click('取得日月雙色水晶'); await click('關閉調查'); await click('調查結界大門'); await click('放入日月雙色水晶');
+    await page.locator('[data-action="sun"]').click(); await page.locator('[data-action="moon"]').click(); await click('確認方向，解除結界');
+    await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('#scene'),'::after').opacity) === 0);
+    check(await page.getByRole('heading',{name:'成功逃脫',exact:true}).isVisible(), '一般動畫結束能通關');
+    report.flows.push({label:'M-06～09、U-02～03、T-03',status:'通過',details:'16 張圖片解碼、鍵盤、800×700 縮放、正常動畫右移、水晶同位置暗轉亮、結界消散'});
+  } finally { await page.close(); }
+  // 獨立的損壞資料案例；不改正式檔案或通關局的遊戲狀態。
+  const broken = await browser.newPage();
+  try {
+    await broken.route('**/castle-content.js', async route => { const response = await route.fetch(); await route.fulfill({response,body:`${await response.text()}\ncastleContent.room.title = '';`}); });
+    await broken.goto(url);
+    await broken.getByText('遊戲內容載入失敗，請重新載入或檢查遊戲檔案。',{exact:true}).waitFor();
+    check(!await broken.locator('#intro').isVisible(), '損壞資料不得進入遊戲');
+    report.flows.push({label:'D-10',status:'通過',details:'隔離的損壞資料顯示載入失敗，停止進入遊戲'});
+  } finally { await broken.close(); }
+}
+
 try {
+  await checkAssetsMotionAndLoadFailure();
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await mobile.goto(url);
   assert.equal(await mobile.locator('.mobile-objects button').count(), 6, 'U-02：手機提供六個容易點擊的文字入口');
