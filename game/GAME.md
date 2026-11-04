@@ -4,7 +4,11 @@
 
 ## 啟動
 
-在專案根目錄執行 `node game/serve.js`，用瀏覽器開啟 <http://127.0.0.1:4173/game/index.html>。結束伺服器按 Ctrl+C。JavaScript 模組需經 HTTP 載入，請使用上述網址。
+直接在檔案總管雙擊 `game/index.html`，以 Chrome 開啟即可遊玩。保留 `game/` 與旁邊的 `asset/` 資料夾位置，圖片就能正常載入。
+
+開發時也可在專案根目錄執行 `node game/serve.js`，用瀏覽器開啟 <http://127.0.0.1:4173/game/index.html>。結束伺服器按 Ctrl+C。
+
+直接開檔會載入已附上的 `browser.js`；本機網址仍使用原本的模組。未來修改 `app.js` 等遊戲模組後，執行 `node game/build-browser.js` 更新直接開檔版本，再跑測試。一般玩家無須執行此命令。
 
 測試指令：`node --test`。
 
@@ -20,6 +24,7 @@ node tests/browser-check.js
 ## 檔案
 
 - `index.html`、`style.css`、`app.js`：畫面、排版與玩家操作。
+- `build-browser.js`、`browser.js`：前者將同一份原始模組組合為後者，讓 Chrome 直接開 HTML 時也能執行；產物已附上，自動測試會檢查是否與原始碼一致。
 - `castle-content.js`：正式古堡資料、素材路徑、線索、答案與效果。
 - `engine.js`：獨立遊戲狀態；畫面關閉不重設進度。
 - `validate-content.js`：載入前檢查資料。
@@ -72,11 +77,11 @@ node tests/browser-check.js
 
 已取得使用者同意：保留所有原始 PNG，在油畫與對照圖上由 JavaScript 疊加一致連線圖，解決原始素材連線難以逐一比對的問題。
 
-## 最終驗收紀錄
+## 首版驗收紀錄（歷史）
 
 日期：2026-11-04。測試者：Codex，以 Playwright 實際點擊畫面；不是人類手動操作。所有通關局均由新遊戲開始，未用開發工具注入進度。
 
-最終正式程式與測試版本：`c0edea1`。此後的文件提交僅補齊本文件、`TEST.md` 與 `game/README.md`。測試時版本為 `ea881ce` 加本輪 `app.js`、`index.html`、`style.css`、`serve.js`、`validate-content.js` 的待提交修正，現皆已包含在 `c0edea1`。
+首版正式程式與測試版本：`c0edea1`。該版後的文件提交僅補齊本文件、`TEST.md` 與 `game/README.md`。測試時版本為 `ea881ce` 加首版 `app.js`、`index.html`、`style.css`、`serve.js`、`validate-content.js` 的待提交修正，皆已包含在 `c0edea1`。最新直接開檔修正見下節。
 
 | 檢查 | 條件與實際結果 |
 | --- | --- |
@@ -103,3 +108,13 @@ node tests/browser-check.js
 `VERIFY.md` 保持原樣，SHA-256 為 `651AF62EF72583D111BE7DD01E6D2BD7C5C17B97579BB1CE237E460396DBB090`。測試與最新結果記在本文件及 `TEST.md`，不覆寫它的歷史待測狀態。
 
 未確認：其他瀏覽器、真實手機觸控裝置與輔助閱讀軟體；本輪手機為 Chrome 視窗尺寸模擬。跨重新整理存檔未列入本輪功能。
+
+## Chrome 直接開檔修正與最新驗收
+
+2026-11-04，版本 `1e56a00`。先用 Chrome 直接開 HTML 重現模組被阻擋、信件與圖片未啟動，新增測試並確認失敗後提交 `9545c14`，再加入直接開檔版本。這次不需開伺服器，雙擊 `game/index.html` 即可。
+
+`node --test`：117 項全通過。瀏覽器新增直接開檔 1366×900 的錯誤後通關，以及 390×844 的正常通關；本機網址兩輪、一般動畫、隔離載入錯誤也重測通過，合計六組紀錄通過、錯誤與警告清單為空。原圖片、謎題答案與通關條件未改。
+
+`browser.js` 由 `constellations.js`、`castle-content.js`、`validate-content.js`、`engine.js`、`app.js` 依相依順序組合而成；產生器遇到未支援的匯入／匯出語法會停止，測試會檢查產物是否過期。未新增外部套件。
+
+新證據在上述資料夾的 `direct-open-fix/` 子資料夾；詳見 `TEST.md` 第 11 節。`VERIFY.md` 未修改；其他瀏覽器與真實手機尚未確認。
