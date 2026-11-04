@@ -202,6 +202,13 @@ async function checkAssetsMotionAndLoadFailure() {
 }
 
 try {
+  const delayedStart = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  try {
+    await delayedStart.route('**/game/app.js', async route => { await new Promise(resolve => setTimeout(resolve, 250)); await route.continue(); });
+    await delayedStart.goto(url);
+    assert.equal(await delayedStart.locator('.mobile-objects button').count(), 6, 'U-05：即使程式回應較慢，頁面載入完成時六個調查入口也已就緒');
+    report.flows.push({ label: 'U-05', status: '通過', details: '程式回應延遲 250ms，頁面載入完成時已初始化六個入口' });
+  } finally { await delayedStart.close(); }
   const directUrl = new URL('../game/index.html', import.meta.url).href;
   await runFlow(1366, 900, true, directUrl);
   await runFlow(390, 844, false, directUrl);
