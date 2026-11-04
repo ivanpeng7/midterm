@@ -31,7 +31,7 @@ export function validateGameContent(content) {
     else declared.set(value, { path, type });
   };
   const reference = (value, path, type) => {
-    if (!isText(value)) return;
+    if (!isText(value)) { fail(path, '引用必須是非空文字'); return; }
     if (declared.get(value)?.type !== type) fail(path, `找不到${type} ${value}`);
   };
 
@@ -127,11 +127,19 @@ export function validateGameContent(content) {
   const puzzles = array(content.puzzles, 'puzzles');
   for (const [i, puzzle] of puzzles.entries()) {
     const p = `puzzles[${i}]`;
-    if (!shape(puzzle, p, ['id', 'clueIds', 'targetHotspotId', 'answer', 'solution', 'solvedFlag', 'onSolved'])) continue;
+    if (!shape(puzzle, p, ['id', 'clueIds', 'targetHotspotId', 'answer', 'solution', 'solvedFlag', 'onSolved'], ['answerType'])) continue;
     collect(puzzle.id, `${p}.id`, '謎題');
     for (const [j, clueId] of array(puzzle.clueIds, `${p}.clueIds`, 1).entries()) reference(clueId, `${p}.clueIds[${j}]`, '線索');
     reference(puzzle.targetHotspotId, `${p}.targetHotspotId`, '可點區域');
-    if (typeof puzzle.answer !== 'string' || !/^\d+$/.test(puzzle.answer)) fail(`${p}.answer`, '必須是非空半形數字字串');
+    if (puzzle.answerType === 'symbols') {
+      const symbols = typeof puzzle.answer === 'string' ? [...puzzle.answer] : [];
+      if (symbols.length !== 3 || new Set(symbols).size !== 3 || !symbols.every(symbol => '♈♉♊♋♌♍♎♏♐♑♒♓'.includes(symbol))) fail(`${p}.answer`, '必須是三個不同的星座符號');
+    } else if (puzzle.answerType === 'directions') {
+      if (typeof puzzle.answer !== 'string' || !/^(up|down),(left|right)$/.test(puzzle.answer)) fail(`${p}.answer`, '必須是太陽上下與月亮左右的方向組合');
+    } else {
+      if ('answerType' in puzzle && puzzle.answerType !== 'code') fail(`${p}.answerType`, '不支援的答案種類');
+      if (typeof puzzle.answer !== 'string' || !/^\d+$/.test(puzzle.answer)) fail(`${p}.answer`, '必須是非空半形數字字串');
+    }
     text(puzzle.solution, `${p}.solution`);
     flag(puzzle.solvedFlag, `${p}.solvedFlag`);
     effects(puzzle.onSolved, `${p}.onSolved`);
@@ -139,12 +147,12 @@ export function validateGameContent(content) {
   }
 
   const kinds = {
-    inspect: ['clueId'], take: ['itemId', 'onceFlag'], enterCode: ['puzzleId'],
+    inspect: ['clueId'], take: ['itemId', 'onceFlag'], enterCode: ['puzzleId'], enterSymbols: ['puzzleId'], enterDirections: ['puzzleId'],
     useItem: ['itemId', 'onceFlag', 'onSuccess'], switchView: ['toViewId']
   };
   const feedbackKeys = {
     inspect: ['success'], take: ['success', 'repeated'], enterCode: ['success', 'failure', 'repeated'],
-    useItem: ['success', 'failure', 'repeated'], switchView: ['success']
+    useItem: ['success', 'failure', 'repeated'], switchView: ['success'], enterSymbols: ['success', 'failure', 'repeated'], enterDirections: ['success', 'failure', 'repeated']
   };
   const interactions = array(content.interactions, 'interactions');
   for (const [i, interaction] of interactions.entries()) {
@@ -152,9 +160,13 @@ export function validateGameContent(content) {
     if (!isObject(interaction)) { fail(p, '必須是物件'); continue; }
     const kind = interaction.kind;
     if (!Object.hasOwn(kinds, kind)) { fail(`${p}.kind`, '不支援的互動種類'); continue; }
-    if (!shape(interaction, p, ['id', 'kind', 'feedback', ...kinds[kind]])) continue;
+    if (!shape(interaction, p, ['id', 'kind', 'feedback', ...kinds[kind]], ['requiresFlags'])) continue;
     collect(interaction.id, `${p}.id`, '互動');
-    if (shape(interaction.feedback, `${p}.feedback`, feedbackKeys[kind])) {
+    if ('requiresFlags' in interaction) {
+      for (const [j, name] of array(interaction.requiresFlags, `${p}.requiresFlags`, 1).entries()) flag(name, `${p}.requiresFlags[${j}]`);
+      text(interaction.feedback?.failure, `${p}.feedback.failure`);
+    }
+    if (shape(interaction.feedback, `${p}.feedback`, feedbackKeys[kind], 'requiresFlags' in interaction ? ['failure'] : [])) {
       for (const key of feedbackKeys[kind]) text(interaction.feedback[key], `${p}.feedback.${key}`);
     }
     const spot = views.flatMap(view => Array.isArray(view?.hotspots) ? view.hotspots : [])
@@ -167,9 +179,11 @@ export function validateGameContent(content) {
       reference(interaction.itemId, `${p}.itemId`, '道具');
       flag(interaction.onceFlag, `${p}.onceFlag`);
     }
-    if (kind === 'enterCode') {
+    if (kind === 'enterCode' || kind === 'enterSymbols' || kind === 'enterDirections') {
       reference(interaction.puzzleId, `${p}.puzzleId`, '謎題');
       if (puzzles.find(puzzle => puzzle?.id === interaction.puzzleId)?.targetHotspotId !== spot?.id) fail(`${p}.puzzleId`, '謎題目標必須是觸發區域');
+      const type = puzzles.find(puzzle => puzzle?.id === interaction.puzzleId)?.answerType ?? 'code';
+      if ({ enterCode: 'code', enterSymbols: 'symbols', enterDirections: 'directions' }[kind] !== type) fail(`${p}.puzzleId`, '互動與答案種類不一致');
     }
     if (kind === 'useItem') {
       effects(interaction.onSuccess, `${p}.onSuccess`);
@@ -186,6 +200,17 @@ export function validateGameContent(content) {
     }
   }
   for (const [i, clue] of clues.entries()) reference(clue?.hotspotId, `clues[${i}].hotspotId`, '可點區域');
+  const completed = new Set([...puzzles.map(p => p?.solvedFlag), ...interactions.map(a => a?.onceFlag)].filter(Boolean));
+  for (const [i, puzzle] of puzzles.entries()) {
+    for (const [j, effect] of (Array.isArray(puzzle?.onSolved) ? puzzle.onSolved : []).entries()) {
+      if (effect?.type === 'setFlag' && completed.has(effect.flag) && effect.value === false) fail(`puzzles[${i}].onSolved[${j}].value`, '不得重設完成旗標');
+    }
+  }
+  for (const [i, action] of interactions.entries()) {
+    for (const [j, effect] of (Array.isArray(action?.onSuccess) ? action.onSuccess : []).entries()) {
+      if (effect?.type === 'setFlag' && completed.has(effect.flag) && effect.value === false) fail(`interactions[${i}].onSuccess[${j}].value`, '不得重設完成旗標');
+    }
+  }
   return errors;
 }
 

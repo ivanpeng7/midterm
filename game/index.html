@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>禁忌實驗室：古堡逃脫</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./layout.css">
+</head>
+<body>
+  <main class="game-shell">
+    <header class="masthead">
+      <div><h1>禁忌實驗室<span>：古堡逃脫</span></h1><p>魔法師書房 · 點擊物件，尋找離開的方法</p></div>
+      <button id="restart" class="quiet">重新開始</button>
+    </header>
+    <div class="scene-area">
+    <section id="scene" class="scene" aria-label="魔法師書房">
+      <img id="room-image" alt="深綠石牆、壁爐、胡桃木書桌與被藍紫色結界封住的大門" width="1376" height="737">
+      <div id="hotspots"></div>
+      <div id="ending" class="ending" hidden><h2>成功逃脫</h2><p>結界散去，你走出了古堡書房。</p><button id="play-again">再玩一次</button></div>
+    </section>
+    </div>
+    <nav id="mobile-objects" class="mobile-objects" aria-label="書房調查物件"></nav>
+    <section class="bottom-bar" aria-label="遊戲工具">
+      <div class="inventory-section"><h2>隨身道具</h2><div id="inventory"><p>尚未取得道具</p></div></div>
+      <p id="message" role="status" aria-live="polite">你是魔法師的學徒，一場失控的實驗將你困在書房。</p>
+    </section>
+    <footer>用滑鼠或觸控調查物件 · Tab 選取，Enter 操作 · Esc 關閉調查</footer>
+  </main>
+  <dialog id="intro" class="intro" aria-labelledby="intro-title">
+    <div class="letter"><h2 id="intro-title">魔法師留下的信</h2><div id="letter-text"></div><button id="start">明白，開始逃脫！</button></div>
+  </dialog>
+  <dialog id="investigation" aria-labelledby="panel-title">
+    <header class="panel-heading"><h2 id="panel-title"></h2><button id="close" class="quiet" aria-label="關閉調查">關閉 ×</button></header>
+    <div id="panel-content"></div>
+    <p id="panel-message" role="status" aria-live="polite"></p>
+  </dialog>
+  <dialog id="restart-confirm" aria-labelledby="restart-title"><h2 id="restart-title">要重新開始嗎？</h2><p>這一局的道具與解謎進度會清空。</p><div class="actions"><button id="confirm-restart">重新開始新遊戲</button><button id="cancel-restart" class="quiet">繼續這一局</button></div></dialog>
+  <template id="module-runtime"><script type="module" src="./app.js"></script></template>
+  <script>
+    // 在頁面載入結束前啟動程式；直接開檔使用普通程式，本機網址使用模組。
+    const directFile = location.protocol === 'file:';
+    const runtime = directFile ? document.createElement('script') : document.querySelector('#module-runtime').content.firstElementChild.cloneNode(true);
+    if (directFile) runtime.src = './browser.js';
+    runtime.async = false;
+    runtime.onerror = () => {
+      document.querySelector('#message').textContent = '遊戲程式載入失敗，請確認遊戲檔案完整後重新載入。';
+    };
+    document.body.append(runtime);
+  </script>
+</body>
+</html>
