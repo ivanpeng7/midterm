@@ -41,7 +41,7 @@ dialog::backdrop { background: #020d0bdb; backdrop-filter: blur(4px); }
 .book-pages .writing { position: absolute; color: #382816; font-family: 'DFKai-SB', 'Microsoft JhengHei', serif; font-size: clamp(13px, 1.9vw, 24px); line-height: 1.8; }
 .writing h3 { font-size: .85em; font-weight: 400; letter-spacing: .16em; margin: 0 0 18px; }
 .writing p { margin: 0 0 10px; }
-.writing strong { font-size: 1.18em; color: #833c1a; }
+.writing.poem strong { font-weight: bold; font-size: inherit; color: inherit; }
 .writing.poem { left: 24%; top: 23%; width: 25%; }
 .writing.hint { left: 54%; top: 23%; width: 22%; }
 .code-entry { position: absolute; left: 36%; top: 39%; width: 27%; height: 26%; background: #201b13; border: 2px solid #a08145; container-type: size; }

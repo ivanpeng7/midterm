@@ -264,14 +264,6 @@ commit／含未提交修改的檔案：
 
 證據在原證據資料夾的 `code-field-fit/` 子資料夾：`node-tests.txt`、`browser-results.json`、各流程的 `*-empty-code.png` 與 `*-code.png`。
 
-## 16. 藏頭詩首字只保留粗體（2026-11-05）
-
-依 `TESTS_v1.md` 的 T-STORY-201 與 `VERIFY_v2.md` 的 V-S-202 更新 I-06：四句原文不變，首字「樂、色、桶、內」只保留粗體。CSS 的 font-weight 為 bold，font-size 與 color 為 inherit；瀏覽器內逐一比較首字與詩句段落的實際字級及顏色相同，首字粗細為 700，而其他字維持一般粗細。
-
-先行測試提交 `1a323ff`。初次因系統 Node.js 路徑改變而找不到既有 Playwright，改以原有套件環境 `C:/Users/ivanp/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe` 執行後，確實在 V-S-202 失敗：桌面直接開檔的「樂」為 27.697px，同句段落為 23.472px。這項樣式失敗才是本輪修改依據；不能把測試工具未啟動當成遊戲測試失敗。修改前 `node --test` 仍為 117 項通過。
-
-測試步驟：從新遊戲翻開魔法書，比對四個首字、原詩與日月提示；返回封面、重新翻閱，再繼續取得透鏡、解開星座、取得及使用水晶、成功逃脫並重新開始。保留既有錯答案、重複操作、線索可重看及道具狀態檢查。修正後的執行結果待填入，先前章節的歷史結果不代表本輪已通過。
-
 ## 15. 所有畫面一頁顯示（2026-11-04）
 
 先行測試 `be12dd4`：主頁面高度超過視窗，道具工具列及頁尾超出範圍；提交後才調整版面。`ea1d270` 補查較矮視窗、各次按鈕操作、透鏡文字線索展開，以及開場標題不得被紅色封印遮住；亦保留原有文字大小、按鈕尺寸與謎題判斷要求。
@@ -283,3 +275,17 @@ U-08 比較頁面、主介面、開場信、調查視窗與其內容的可用／
 完整通關以 Chrome `156.0.8078.80` 的 1366×900、1280×720、800×600、390×844、390×700 執行；直接開檔及本機網址皆測，另有 800×700 縮放、一般動畫、延遲載入與損壞資料案例。手機十二星座圖三欄四列全部可見；開場標題在封印圖案下方；密碼框四圈完整且等大。實際操作由既有 Playwright 執行，截圖經目視核對；Browser 技能未提供，未新增外部套件。
 
 證據：`C:/Users/ivanp/.codex/visualizations/2026/11/04/01a1a682-72c8-7190-b198-935b1499c34d/one-page-layout/` 內的 `node-tests.txt`、`browser-results.json` 及各尺寸流程截圖。其他瀏覽器、真實手機與比上述更小的視窗尚未確認；`VERIFY.md` 未修改。
+
+## 16. 藏頭詩首字只保留粗體（2026-11-05）
+
+依 `TESTS_v1.md` 的 T-STORY-201 與 `VERIFY_v2.md` 的 V-S-202 更新 I-06：四句原文不變，首字「樂、色、桶、內」只保留粗體。CSS 的 font-weight 為 bold，font-size 與 color 為 inherit；瀏覽器內逐一比較首字與詩句段落的實際字級及顏色相同，首字粗細為 700，而其他字維持一般粗細。
+
+先行測試提交 `1a323ff`。初次因系統 Node.js 路徑改變而找不到既有 Playwright，改以原有套件環境 `C:/Users/ivanp/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe` 執行後，確實在 V-S-202 失敗：桌面直接開檔的「樂」為 27.697px，同句段落為 23.472px。這項樣式失敗才是本輪修改依據；不能把測試工具未啟動當成遊戲測試失敗。修改前 `node --test` 仍為 117 項通過。
+
+測試步驟：從新遊戲翻開魔法書，比對四個首字、原詩與日月提示；返回封面、重新翻閱，再繼續取得透鏡、解開星座、取得及使用水晶、成功逃脫並重新開始。保留既有錯答案、重複操作、線索可重看及道具狀態檢查。
+
+修改：只調整 `game/style.css` 的 `.writing.poem strong`，設定 `font-weight: bold; font-size: inherit; color: inherit;`。原文、密碼與謎題不變；直接開檔及本機網址共用同一份 CSS，不需另外改動產生的 JavaScript。`tests/browser-check.js` 新增四個首字各自的實際字級、顏色與粗細檢查，既有原文與通關檢查保留。
+
+本輪結果（2026-11-05）：`node --test` 共 117 項通過、0 失敗、0 略過；使用上述附帶套件的 Node.js 執行 `tests/browser-check.js`，十組驗證通過，正式流程錯誤／警告清單為空。Edge `156.0.4314.58`，既有 Playwright 執行，Browser 技能未提供。涵蓋 1366×900、1280×720、800×600、390×844、390×700，以及直接開檔、本機網址、錯誤後通關、正常動畫與隔離損壞資料；四個首字都是 700、字級及顏色各自等於詩句段落，其他字未一併加粗。桌面及手機書本截圖已目視核對。
+
+證據：`C:/Users/ivanp/AppData/Local/Temp/midterm-poem-before/`、`C:/Users/ivanp/AppData/Local/Temp/midterm-poem-after/` 的 `browser-results.json` 與流程截圖（含 `direct-1366-R-01-book.png`、`390-R-01-book.png`）；Node 輸出為 `C:/Users/ivanp/AppData/Local/Temp/midterm-poem-node-after.txt`。其他瀏覽器與真實手機仍未實測；未修改 `VERIFY.md`。
