@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 // 依相依順序組合本專案模組，不安裝額外建置套件。
-const moduleFiles = ['constellations.js', 'castle-content.js', 'validate-content.js', 'engine.js', 'audio.js', 'app.js'];
+const moduleFiles = ['constellations.js', 'castle-content.js', 'validate-content.js', 'engine.js', 'audio.js', 'ending-video.js', 'app.js'];
 
 export async function createBrowserBundle() {
   const loaded = new Set();

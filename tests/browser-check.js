@@ -21,6 +21,14 @@ const check = (condition, message) => assert.ok(condition, message);
 
 async function checkEndingVideo(page) {
   await page.getByRole('heading', { name: '通關影片', exact: true }).waitFor();
+  // preload=none 且自動播放被拒絕時，必須先由玩家按播放，才會下載影格。
+  await page.waitForFunction(() => document.querySelector('#ending-video').error || !document.querySelector('#ending-video').paused || !document.querySelector('#play-ending-video').hidden);
+  if (await page.locator('#play-ending-video').isVisible()) {
+    const viewport = page.viewportSize();
+    const screenshot = join(output, `ending-video-blocked-${viewport.width}-${viewport.height}.png`);
+    await page.screenshot({path:screenshot}); report.screenshots.push(screenshot);
+    await page.locator('#play-ending-video').click();
+  }
   await page.waitForFunction(() => {
     const v = document.querySelector('#ending-video');
     return v?.error || v?.readyState >= 2;
@@ -29,10 +37,11 @@ async function checkEndingVideo(page) {
   assert.equal(metadata.src,'../asset/superidol.mp4'); assert.equal(metadata.error,undefined);
   check(metadata.duration > 0 && Number.isFinite(metadata.duration), '通關影片可解碼且有正確長度');
   check(metadata.controls && metadata.inline, '通關影片有控制列且在手機內嵌播放');
-  await page.waitForFunction(() => !document.querySelector('#ending-video').paused || !document.querySelector('#play-ending-video').hidden);
-  if (await page.locator('#play-ending-video').isVisible()) await page.locator('#play-ending-video').click();
   await page.waitForFunction(() => document.querySelector('#ending-video').currentTime > .05);
   await assertOnePage(page,'通關影片');
+  const viewport = page.viewportSize();
+  const screenshot = join(output, `ending-video-${page.url().startsWith('file:') ? 'direct' : 'http'}-${viewport.width}-${viewport.height}.png`);
+  await page.screenshot({path:screenshot}); report.screenshots.push(screenshot);
   await page.getByRole('button', { name: '關閉影片', exact: true }).click();
   check(await page.locator('#ending-video').evaluate(v=>v.paused && v.currentTime === 0 && !v.hasAttribute('src')), '關閉後停止影片並釋放來源');
 }

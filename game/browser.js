@@ -523,20 +523,74 @@ function createGameAudio({ makeAudio = url => new Audio(url), schedule = setTime
   };
 }
 
+// 來源：ending-video.js
+// 影片只在本局確定通關後載入；失敗、關閉或重開都不改變遊戲進度。
+function createEndingVideo({ video, dialog, retry, status, muted = () => false, onStart = () => {} }) {
+  let active = false, generation = 0, failed = false;
+  const stop = () => {
+    generation++; active = false;
+    video.pause();
+    try { video.currentTime = 0; } catch { /* 尚無影格時也可關閉。 */ }
+    video.removeAttribute('src'); video.load();
+    retry.hidden = true; status.textContent = '';
+  };
+  const close = () => { stop(); if (dialog.open) dialog.close(); };
+  const attempt = () => {
+    if (!active || !dialog.open || failed) return;
+    const current = ++generation;
+    const blocked = () => {
+      if (!active || !dialog.open || current !== generation || failed) return;
+      retry.hidden = false;
+      status.textContent = '請按「播放影片」開始播放通關影片。';
+    };
+    try {
+      Promise.resolve(video.play()).then(() => {
+        if (active && dialog.open && current === generation && !failed) { retry.hidden = true; status.textContent = ''; }
+      }).catch(blocked);
+    } catch { blocked(); }
+  };
+  retry.addEventListener('click', attempt);
+  dialog.addEventListener('close', stop);
+  dialog.addEventListener('cancel', event => { event.preventDefault(); close(); });
+  video.addEventListener('error', () => {
+    if (!active) return;
+    failed = true; retry.hidden = true;
+    status.textContent = '影片無法播放，你已成功逃脫，可以關閉影片繼續。';
+  });
+  return {
+    show(won) {
+      if (won !== true || active || dialog.open) return;
+      active = true; failed = false;
+      retry.hidden = true; status.textContent = '';
+      video.muted = muted(); video.src = '../asset/superidol.mp4';
+      onStart(); dialog.showModal(); attempt();
+    },
+    close,
+    setMuted(value) { video.muted = Boolean(value); },
+    setVisible(value) {
+      if (!active) return;
+      if (!value) { generation++; video.pause(); }
+      else if (video.paused && !failed) { retry.hidden = false; status.textContent = '請按「播放影片」繼續播放。'; }
+    }
+  };
+}
+
 // 來源：app.js
 
 const $ = selector => document.querySelector(selector);
 const src = key => `../${assets[key]}`;
 const sound = createGameAudio();
+const endingVideo = createEndingVideo({ video: $('#ending-video'), dialog: $('#ending-video-dialog'), retry: $('#play-ending-video'), status: $('#ending-video-status'), muted: () => sound.muted, onStart: () => sound.reset() });
 const audible = (action, result) => { sound.handle(action, result); return result; };
-document.addEventListener('visibilitychange', () => sound.setVisible(!document.hidden));
-window.addEventListener('pagehide', () => sound.setVisible(false));
+document.addEventListener('visibilitychange', () => { sound.setVisible(!document.hidden); endingVideo.setVisible(!document.hidden); });
+window.addEventListener('pagehide', () => { sound.setVisible(false); endingVideo.close(); });
 window.addEventListener('pageshow', () => sound.setVisible(!document.hidden));
 document.addEventListener('click', event => {
   const button = event.target.closest('button');
   if (!button || button.disabled) return;
   if (button.matches('[data-sound-toggle]')) {
     sound.setMuted(!sound.muted);
+    endingVideo.setMuted(sound.muted);
     for (const control of document.querySelectorAll('[data-sound-toggle]')) {
       control.textContent = sound.muted ? '聲音：關' : '聲音：開';
       control.setAttribute('aria-pressed', String(sound.muted));
@@ -672,6 +726,7 @@ $('#panel-content').addEventListener('click', event => {
         $('#scene').classList.add('escaped');
         $('#ending h2').setAttribute('tabindex', '-1'); $('#ending h2').focus();
         say(result);
+        endingVideo.show(game.state.flags.escaped);
       }).catch(() => {
         if (round === completedRound) say({ message: '開門圖片載入失敗，請按重新開始後再試。' });
       });
@@ -708,6 +763,7 @@ function closePanel() {
 }
 
 function restart() {
+  endingVideo.close();
   sound.reset();
   round++;
   $('#restart-confirm').close();
@@ -756,6 +812,7 @@ try {
   });
   $('#intro').addEventListener('cancel', event => event.preventDefault());
   $('#close').addEventListener('click', closePanel);
+  $('#close-ending-video').addEventListener('click', () => endingVideo.close());
   $('#investigation').addEventListener('cancel', event => { event.preventDefault(); closePanel(); });
   $('#restart').addEventListener('click', () => $('#restart-confirm').showModal());
   $('#play-again').addEventListener('click', restart);
