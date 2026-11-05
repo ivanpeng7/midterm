@@ -125,6 +125,18 @@ async function runFlow(width, height, errors, entryUrl = url) {
     for (const text of ['樂音迴響古堡間，','色彩斑斕幻影連，','桶中暗藏玄機在，','內尋方知鎖鎖牽。','日守天頂，月循右方，雙曜歸位，結界自解。']) check((await panel().textContent()).includes(text), `書本原文：${text}`);
     check(await panel().locator('.writing').evaluateAll(nodes => nodes.every(node => parseFloat(getComputedStyle(node).fontSize) >= 16)), 'M-01：書本正文在手機也至少 16px');
     await shot('book'); await noOverflow();
+    const poemInitials = await panel().locator('.poem p').evaluateAll(lines => lines.map(line => {
+      const initial = line.querySelector('strong');
+      const body = getComputedStyle(line), first = initial && getComputedStyle(initial);
+      return { text: initial?.textContent, weight: first?.fontWeight, size: first?.fontSize, color: first?.color, bodySize: body.fontSize, bodyColor: body.color, bodyWeight: body.fontWeight };
+    }));
+    assert.deepEqual(poemInitials.map(initial => initial.text), ['樂','色','桶','內'], 'T-STORY-201：四個藏頭字原文一致');
+    for (const initial of poemInitials) {
+      assert.equal(initial.weight, '700', `V-S-202：${initial.text} 保留粗體`);
+      assert.equal(initial.size, initial.bodySize, `V-S-202：${initial.text} 字級繼承詩句，不另行放大`);
+      assert.equal(initial.color, initial.bodyColor, `V-S-202：${initial.text} 顏色繼承詩句，不另行變色`);
+      check(Number(initial.bodyWeight) < Number(initial.weight), '詩句其餘文字不一併改成粗體');
+    }
     await click('查看封面'); await assertClosedBook('由內頁返回封面');
     await close(); await click('調查魔法書'); await assertClosedBook('關閉後重新調查封面');
     await click('翻開魔法書');
