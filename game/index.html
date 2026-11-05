@@ -37,6 +37,12 @@
     <p id="panel-message" role="status" aria-live="polite"></p>
   </dialog>
   <dialog id="restart-confirm" aria-labelledby="restart-title"><h2 id="restart-title">要重新開始嗎？</h2><p>這一局的道具與解謎進度會清空。</p><div class="actions"><button id="confirm-restart">重新開始新遊戲</button><button id="cancel-restart" class="quiet">繼續這一局</button></div></dialog>
+  <dialog id="ending-video-dialog" aria-labelledby="ending-video-title">
+    <header class="panel-heading"><h2 id="ending-video-title">通關影片</h2><div class="header-actions"><button class="quiet" data-sound-toggle aria-label="靜音" aria-pressed="false">聲音：開</button><button id="close-ending-video" class="quiet">關閉影片</button></div></header>
+    <video id="ending-video" controls playsinline preload="none" aria-label="成功逃脫後的通關影片"></video>
+    <p id="ending-video-status" role="status" aria-live="polite"></p>
+    <button id="play-ending-video" hidden>播放影片</button>
+  </dialog>
   <template id="module-runtime"><script type="module" src="./app.js"></script></template>
   <script>
     // 在頁面載入結束前啟動程式；直接開檔使用普通程式，本機網址使用模組。

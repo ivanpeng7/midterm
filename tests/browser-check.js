@@ -19,6 +19,33 @@ const url = 'http://127.0.0.1:4173/game/index.html';
 const symbols = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
 const check = (condition, message) => assert.ok(condition, message);
 
+async function checkEndingVideo(page) {
+  await page.getByRole('heading', { name: '通關影片', exact: true }).waitFor();
+  // preload=none 且自動播放被拒絕時，必須先由玩家按播放，才會下載影格。
+  await page.waitForFunction(() => document.querySelector('#ending-video').error || !document.querySelector('#ending-video').paused || !document.querySelector('#play-ending-video').hidden);
+  if (await page.locator('#play-ending-video').isVisible()) {
+    const viewport = page.viewportSize();
+    const screenshot = join(output, `ending-video-blocked-${viewport.width}-${viewport.height}.png`);
+    await page.screenshot({path:screenshot}); report.screenshots.push(screenshot);
+    await page.locator('#play-ending-video').click();
+  }
+  await page.waitForFunction(() => {
+    const v = document.querySelector('#ending-video');
+    return v?.error || v?.readyState >= 2;
+  });
+  const metadata = await page.locator('#ending-video').evaluate(v => ({ src: v.getAttribute('src'), error: v.error?.message, duration: v.duration, controls: v.controls, inline: v.playsInline }));
+  assert.equal(metadata.src,'../asset/superidol.mp4'); assert.equal(metadata.error,undefined);
+  check(metadata.duration > 0 && Number.isFinite(metadata.duration), '通關影片可解碼且有正確長度');
+  check(metadata.controls && metadata.inline, '通關影片有控制列且在手機內嵌播放');
+  await page.waitForFunction(() => document.querySelector('#ending-video').currentTime > .05);
+  await assertOnePage(page,'通關影片');
+  const viewport = page.viewportSize();
+  const screenshot = join(output, `ending-video-${page.url().startsWith('file:') ? 'direct' : 'http'}-${viewport.width}-${viewport.height}.png`);
+  await page.screenshot({path:screenshot}); report.screenshots.push(screenshot);
+  await page.getByRole('button', { name: '關閉影片', exact: true }).click();
+  check(await page.locator('#ending-video').evaluate(v=>v.paused && v.currentTime === 0 && !v.hasAttribute('src')), '關閉後停止影片並釋放來源');
+}
+
 async function assertOnePage(page, stage) {
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   const issues = await page.evaluate(() => {
@@ -34,7 +61,7 @@ async function assertOnePage(page, stage) {
       const title = letter.querySelector('h2').getBoundingClientRect();
       if (title.top < paper.top + paper.height * .31 - 2) result.push('開場標題與紅色封印圖案重疊');
     }
-    for (const node of document.querySelectorAll('.masthead, .bottom-bar, footer, #mobile-objects button, dialog[open] button, dialog[open] input, dialog[open] canvas, dialog[open] .writing, dialog[open] .caption, dialog[open] #panel-message')) {
+    for (const node of document.querySelectorAll('.masthead, .bottom-bar, footer, #mobile-objects button, dialog[open] button, dialog[open] input, dialog[open] canvas, dialog[open] video, dialog[open] .writing, dialog[open] .caption, dialog[open] #panel-message')) {
       if (!node.checkVisibility()) continue;
       const rect = node.getBoundingClientRect();
       if (rect.left < -1 || rect.top < -1 || rect.right > innerWidth + 1 || rect.bottom > innerHeight + 1) result.push(`${node.getAttribute('aria-label') || node.id || node.className || node.tagName} 超出視窗`);
@@ -55,6 +82,14 @@ async function assertOnePage(page, stage) {
 
 async function runFlow(width, height, errors, entryUrl = url) {
   const page = await browser.newPage({ viewport: { width, height }, reducedMotion: 'reduce' });
+  if (width === 390 && height === 700) await page.addInitScript(() => {
+    const original = HTMLMediaElement.prototype.play;
+    let denied = false;
+    HTMLMediaElement.prototype.play = function() {
+      if (this.tagName === 'VIDEO' && !denied) { denied = true; return Promise.reject(new DOMException('測試自動播放受阻','NotAllowedError')); }
+      return original.call(this);
+    };
+  });
   page.on('pageerror', error => report.errors.push(error.message));
   page.on('console', message => { if (['error','warning'].includes(message.type())) report.errors.push(message.text()); });
   page.on('response', response => { if (response.status() >= 400) report.errors.push(`${response.status()} ${response.url()}`); });
@@ -82,6 +117,7 @@ async function runFlow(width, height, errors, entryUrl = url) {
     await shot('intro'); await noOverflow();
     await click('明白，開始逃脫！');
     await page.locator('#intro').waitFor({ state: 'hidden' });
+    check(await page.locator('#ending-video').evaluate(v=>v.paused && !v.hasAttribute('src')), '尚未通關不可載入或播放影片');
     assert.equal(await page.locator('#inventory').innerText(), '尚未取得道具');
     assert.equal((await page.locator('#hotspots').innerText()).trim(), '', 'U-04：場景物件上不顯示名稱文字');
     const objectNames = await page.locator('#hotspots button').evaluateAll(buttons => buttons.map(button => button.getAttribute('aria-label')));
@@ -219,12 +255,14 @@ async function runFlow(width, height, errors, entryUrl = url) {
     await page.route('**/asset/bg_study_unlocked*', async route => { await new Promise(resolve => setTimeout(resolve, 500)); await route.continue(); });
     await click('確認方向，解除結界');
     check(await page.locator('#ending').evaluate(node => node.hidden || (document.querySelector('#room-image').complete && document.querySelector('#room-image').naturalWidth > 0)), 'S-04：開門圖片尚未載入時，不先顯示成功結局');
+    await checkEndingVideo(page);
     await page.getByRole('heading', { name: '成功逃脫', exact: true }).waitFor();
     check(await page.getByRole('heading', { name: '成功逃脫', exact: true }).isVisible(), '顯示成功逃脫');
     check((await page.locator('#room-image').getAttribute('src')).includes('unlocked'), '成功後才換開門底圖');
     check(!await page.locator('#hotspots').isVisible(), '通關後關閉舊機關');
     await shot('ending'); await noOverflow();
     await click('再玩一次'); check(await page.locator('#intro').isVisible(), '重開回到信件');
+    check(await page.locator('#ending-video').evaluate(v=>v.paused && !v.hasAttribute('src')), '新遊戲沒有上一局的影片或聲音');
     assert.equal(await page.locator('#inventory').innerText(),'尚未取得道具');
     await click('明白，開始逃脫！'); await page.locator('#intro').waitFor({state:'hidden'});
     await click('調查結界大門'); assert.equal(await page.getByRole('button',{name:'放入日月雙色水晶',exact:true}).count(),1); await close();
@@ -272,6 +310,7 @@ async function checkAssetsMotionAndLoadFailure() {
     await click('取得日月雙色水晶'); await click('關閉調查'); await click('調查結界大門'); await click('放入日月雙色水晶');
     await page.locator('[data-action="sun"]').click(); await page.locator('[data-action="moon"]').click(); await click('確認方向，解除結界');
     await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('#scene'),'::after').opacity) === 0);
+    await checkEndingVideo(page);
     check(await page.getByRole('heading',{name:'成功逃脫',exact:true}).isVisible(), '一般動畫結束能通關');
     report.flows.push({label:'M-06～09、U-02～03、T-03',status:'通過',details:'16 張圖片解碼、鍵盤、800×700 縮放、正常動畫右移、水晶同位置暗轉亮、結界消散'});
   } finally { await page.close(); }

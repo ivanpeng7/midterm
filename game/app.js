@@ -2,19 +2,22 @@ import { castleContent, assets, letter, poem, directionHint } from './castle-con
 import { createGame } from './engine.js';
 import { constellations, drawGraph } from './constellations.js';
 import { createGameAudio } from './audio.js';
+import { createEndingVideo } from './ending-video.js';
 
 const $ = selector => document.querySelector(selector);
 const src = key => `../${assets[key]}`;
 const sound = createGameAudio();
+const endingVideo = createEndingVideo({ video: $('#ending-video'), dialog: $('#ending-video-dialog'), retry: $('#play-ending-video'), status: $('#ending-video-status'), muted: () => sound.muted, onStart: () => sound.reset() });
 const audible = (action, result) => { sound.handle(action, result); return result; };
-document.addEventListener('visibilitychange', () => sound.setVisible(!document.hidden));
-window.addEventListener('pagehide', () => sound.setVisible(false));
+document.addEventListener('visibilitychange', () => { sound.setVisible(!document.hidden); endingVideo.setVisible(!document.hidden); });
+window.addEventListener('pagehide', () => { sound.setVisible(false); endingVideo.close(); });
 window.addEventListener('pageshow', () => sound.setVisible(!document.hidden));
 document.addEventListener('click', event => {
   const button = event.target.closest('button');
   if (!button || button.disabled) return;
   if (button.matches('[data-sound-toggle]')) {
     sound.setMuted(!sound.muted);
+    endingVideo.setMuted(sound.muted);
     for (const control of document.querySelectorAll('[data-sound-toggle]')) {
       control.textContent = sound.muted ? '聲音：關' : '聲音：開';
       control.setAttribute('aria-pressed', String(sound.muted));
@@ -150,6 +153,7 @@ $('#panel-content').addEventListener('click', event => {
         $('#scene').classList.add('escaped');
         $('#ending h2').setAttribute('tabindex', '-1'); $('#ending h2').focus();
         say(result);
+        endingVideo.show(game.state.flags.escaped);
       }).catch(() => {
         if (round === completedRound) say({ message: '開門圖片載入失敗，請按重新開始後再試。' });
       });
@@ -186,6 +190,7 @@ function closePanel() {
 }
 
 function restart() {
+  endingVideo.close();
   sound.reset();
   round++;
   $('#restart-confirm').close();
@@ -234,6 +239,7 @@ try {
   });
   $('#intro').addEventListener('cancel', event => event.preventDefault());
   $('#close').addEventListener('click', closePanel);
+  $('#close-ending-video').addEventListener('click', () => endingVideo.close());
   $('#investigation').addEventListener('cancel', event => { event.preventDefault(); closePanel(); });
   $('#restart').addEventListener('click', () => $('#restart-confirm').showModal());
   $('#play-again').addEventListener('click', restart);
